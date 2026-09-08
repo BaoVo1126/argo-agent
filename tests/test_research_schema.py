@@ -1,9 +1,5 @@
-"""Parsing, validation and the join -- everything that decides what is real."""
-
 from __future__ import annotations
-
 import datetime as dt
-
 from modes.research.pipeline import _merge
 from modes.research.pipeline import SourceReport
 from src.scoring import CredibilityScore
@@ -22,14 +18,12 @@ SCHEMA = Schema(
 
 
 def test_thousands_separators_both_conventions():
-    assert parse_number("26,100.00") == 26100.0     # comma thousands
-    assert parse_number("158.500.000") == 158500000.0  # dot thousands, VN style
-    assert parse_number("158.5") == 158.5           # one dot, two decimals -> decimal
+    assert parse_number("26,100.00") == 26100.0   
+    assert parse_number("158.500.000") == 158500000.0  
+    assert parse_number("158.5") == 158.5         
 
 
 def test_unparseable_is_none_never_zero():
-    """Zero is a price. None is 'we did not get one', and the difference is
-    the whole reason coverage can be reported honestly."""
     assert parse_number("n/a") is None
     assert parse_number(None) is None
 
@@ -45,7 +39,7 @@ def test_coverage_counts_the_field_not_the_row():
         {"date": "2026-06-02", "gold_price_vnd": "151000000", "usd_vnd_rate": None},
     ]
     clean, report = validate(rows, SCHEMA)
-    assert len(clean) == 2                      # the rate is optional
+    assert len(clean) == 2                  
     assert report.coverage("gold_price_vnd") == 100.0
     assert report.coverage("usd_vnd_rate") == 50.0
 
@@ -77,8 +71,6 @@ def _report(label: str, total: int) -> SourceReport:
 
 
 def test_the_higher_scoring_source_wins_a_day_rather_than_being_averaged():
-    """Blending two published boards invents a number neither institution
-    stands behind. Preferring one keeps every point attributable."""
     strong = _report("strong", 70)
     weak = _report("weak", 60)
     rows = _merge(
