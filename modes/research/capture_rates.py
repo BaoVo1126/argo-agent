@@ -1,23 +1,6 @@
-"""
-Capture today's rate board. Built to be run on a schedule.
-
-    python -m modes.research.capture_rates
-    python -m modes.research.capture_rates --quiet     # for cron / Task Scheduler
-
-The trend chart has no history to draw until this has run more than once, and
-no site publishes past savings rates, so the history is made here. Running it
-daily is what turns a board into a series.
-
-Exit codes matter because a scheduler reads them: 0 captured, 1 nothing usable,
-2 captured but the cross-check against BIDV's own figures disagreed -- which is
-worth a person's attention even though the data was stored.
-"""
-
 from __future__ import annotations
-
 import argparse
 import sys
-
 from modes.research import bank_rates, snapshots
 
 
