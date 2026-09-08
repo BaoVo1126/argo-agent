@@ -1,23 +1,3 @@
-"""
-The planner: a local model, chosen by what this machine actually has.
-
-Everything runs on Ollama. The hosted option was removed rather than kept as
-an alternative, because a second backend that nobody exercises is a second
-contract that quietly rots -- and the hosted free tier was 20 requests a day,
-which funded about four tasks. Local costs latency instead of quota, and on a
-CPU-only machine latency is a number you can plan around.
-
-The model is not hard-coded. `llm/discover.py` asks Ollama what is installed,
-keeps the ones that report tool support, and takes the smallest -- so this
-works on a machine that pulled something different, and fails loudly on one
-that pulled nothing suitable.
-
-One thing this file has to handle. Ollama has no way to *force* a tool call,
-so a model can answer with prose instead. Rather than parse prose into an
-action -- which is how a loop starts clicking at random -- an unparseable reply
-becomes `finish(success=false)` with the reason, and the run ends honestly.
-"""
-
 from __future__ import annotations
 
 import json
@@ -33,8 +13,6 @@ class OllamaPlanner:
     def __init__(self, model: str | None = None, host: str | None = None) -> None:
         from src.llm.discover import choose
 
-        # Resolved once, here, so the run reports the model it actually used
-        # rather than the one someone assumed.
         self.info = choose(model)
         self.model = self.info.name
         self.host = (host or SETTINGS.ollama_host).rstrip("/")
@@ -52,10 +30,6 @@ class OllamaPlanner:
             ],
             "tools": self.tools,
             "stream": False,
-            # temperature 0 so the same page yields the same action; num_ctx
-            # raised because the element list plus history routinely exceeds
-            # Ollama's 2048-token default, and a silently truncated prompt
-            # loses the very elements the model is supposed to choose from.
             "options": {"temperature": 0, "num_ctx": 8192},
         }
 
@@ -82,9 +56,6 @@ class OllamaPlanner:
                     arguments = {}
             if name in self.valid:
                 return Decision(action=name, args=dict(arguments or {}))
-            # A hallucinated action name is reported rather than executed;
-            # registry.execute would reject it anyway, but naming it here
-            # makes the trace say what the model actually asked for.
             return Decision(
                 "finish",
                 {"success": False, "result": f"model invented an action: {name!r}"},
