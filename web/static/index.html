@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argo — So sánh lãi suất tiết kiệm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Be+Vietnam+Pro:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23162026'/%3E%3Ccircle cx='16' cy='12' r='6.5' fill='%23C4291C'/%3E%3Cpath d='M2 26 L10 20 L17 25 L24 19 L30 26 Z' fill='%23B07A16'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="masthead masthead--slim">
+  <svg class="masthead__scene" viewBox="0 0 1440 190" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#131C22"/><stop offset="100%" stop-color="#2A414A"/>
+      </linearGradient>
+      <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+        <circle cx="2" cy="2" r="1.1" fill="#FAF5EA" opacity="0.10"/>
+      </pattern>
+      <radialGradient id="glow">
+        <stop offset="0%" stop-color="#C4291C" stop-opacity="0.34"/>
+        <stop offset="100%" stop-color="#C4291C" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="1440" height="190" fill="url(#sky)"/>
+    <rect width="1440" height="190" fill="url(#dots)"/>
+    <circle cx="1250" cy="62" r="110" fill="url(#glow)"/>
+    <circle cx="1250" cy="62" r="36" fill="#C4291C"/>
+    <path d="M0 140 L190 116 L360 138 L540 112 L720 140 L910 114 L1100 142 L1290 118
+             L1440 140 L1440 190 L0 190 Z" fill="#182229"/>
+  </svg>
+  <div class="masthead__text">
+    <h1>Argo</h1>
+    <p>So sánh lãi suất tiết kiệm giữa các ngân hàng Việt Nam. Số liệu lấy trực
+       tiếp từ nguồn công khai và được đối chiếu lại với công bố của ngân hàng.</p>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Khu vực làm việc">
+  <button class="tab" id="tab-rates" role="tab" aria-selected="true"
+          aria-controls="panel-rates">Lãi suất ngân hàng</button>
+  <button class="tab" id="tab-macro" role="tab" aria-selected="false"
+          aria-controls="panel-macro">Chỉ số vĩ mô</button>
+  <button class="tab" id="tab-updates" role="tab" aria-selected="false"
+          aria-controls="panel-updates">Lịch sử cập nhật</button>
+</nav>
+
+<main>
+
+<!-- ========================= TAB: LÃI SUẤT ========================= -->
+<section id="panel-rates" role="tabpanel" aria-labelledby="tab-rates">
+
+  <div class="dash__head">
+    <div>
+      <h2 id="dash-title">Lãi suất tiết kiệm kỳ hạn 12 tháng</h2>
+      <p class="dash__meta" id="dash-meta">Đang tải…</p>
+    </div>
+    <button class="btn" id="refresh">Cập nhật số liệu</button>
+  </div>
+
+  <p class="progress__phase" id="refresh-phase" hidden></p>
+  <div id="dash-notice" hidden></div>
+
+  <!-- 0. Câu hỏi có cấu trúc: chọn, không phải gõ -->
+  <section class="card" id="query-card">
+    <h3>So sánh lãi suất</h3>
+    <p class="explain">Chọn ngân hàng và kỳ hạn bạn quan tâm, rồi chọn muốn so
+      sánh giữa các ngân hàng, theo thời gian, hay cả hai.</p>
+
+    <form id="rate-form" autocomplete="off">
+      <fieldset class="field">
+        <legend class="field__label">Ngân hàng <em>(chọn ít nhất 1)</em></legend>
+        <div class="chipset" id="pick-banks"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field__label">Kỳ hạn <em>(chọn ít nhất 1)</em></legend>
+        <div class="chipset" id="pick-tenors"></div>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend class="field__label">Loại so sánh</legend>
+        <div class="radioset">
+          <label class="inline"><input type="radio" name="mode" value="banks" checked>
+            Giữa ngân hàng</label>
+          <label class="inline"><input type="radio" name="mode" value="time">
+            Theo thời gian</label>
+          <label class="inline"><input type="radio" name="mode" value="both">
+            Cả hai</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field" id="period-fields" hidden>
+        <legend class="field__label">Khoảng thời gian</legend>
+        <div class="range">
+          <label class="field">
+            <span class="field__sub">Kỳ hiện tại</span>
+            <select id="preset-current">
+              <option value="week">Tuần này</option>
+              <option value="month" selected>Tháng này</option>
+              <option value="year">Năm nay</option>
+              <option value="custom">Tùy chỉnh…</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field__sub">So với</span>
+            <select id="preset-previous" disabled></select>
+          </label>
+        </div>
+
+        <div class="range" id="custom-current" hidden>
+          <label class="field">
+            <span class="field__sub">Kỳ hiện tại — từ ngày</span>
+            <input id="cur-start" type="date">
+          </label>
+          <label class="field">
+            <span class="field__sub">đến ngày</span>
+            <input id="cur-end" type="date">
+          </label>
+        </div>
+        <div class="range" id="custom-previous" hidden>
+          <label class="field">
+            <span class="field__sub">Kỳ so sánh — từ ngày</span>
+            <input id="prev-start" type="date">
+          </label>
+          <label class="field">
+            <span class="field__sub">đến ngày</span>
+            <input id="prev-end" type="date">
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="btn" id="rate-submit">So sánh</button>
+        <p class="field__help" id="rate-help"></p>
+      </div>
+    </form>
+  </section>
+
+  <div id="rate-result" hidden>
+    <section class="card">
+      <div class="block__head">
+        <h3 id="rq-title">Kết quả so sánh</h3>
+        <p class="block__note" id="rq-period"></p>
+      </div>
+      <div id="rq-caveats"></div>
+      <div class="insight">
+        <p class="insight__label">Nhận định</p>
+        <ul class="insight__list" id="rq-insights"></ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="block__head">
+        <h3>Bảng so sánh</h3>
+        <p class="block__note" id="rq-table-note"></p>
+      </div>
+      <p class="legend">
+        <span class="swatch swatch--best"></span> cao nhất ở kỳ hạn đó
+        <span class="swatch swatch--worst"></span> thấp nhất ở kỳ hạn đó
+        <span class="legend__note">Lãi suất gửi tại quầy, đơn vị %/năm.</span>
+      </p>
+      <div class="table-scroll">
+        <table class="table table--rates" id="rq-table"></table>
+      </div>
+    </section>
+
+    <section class="card" id="rq-charts-card">
+      <h3>Biểu đồ</h3>
+      <div id="rq-charts"></div>
+    </section>
+  </div>
+
+  <h3 class="section-rule">Tổng quan bảng lãi suất</h3>
+
+  <!-- 1. KPI: câu trả lời cho "đang thế nào?" -->
+  <section class="kpis" id="kpis" aria-label="Chỉ số chính"></section>
+
+  <!-- 2. Xu hướng theo thời gian -->
+  <section class="card" id="trend-card">
+    <div class="block__head">
+      <h3 id="trend-caption">Diễn biến lãi suất kỳ hạn 12 tháng</h3>
+      <div class="bank-picker" id="bank-picker" aria-label="Chọn ngân hàng so sánh"></div>
+    </div>
+    <figure class="figure" id="trend-figure"><img id="trend-chart" alt=""></figure>
+    <p class="empty" id="trend-empty" hidden></p>
+    <div class="insight">
+      <p class="insight__label">Nhận định</p>
+      <p id="trend-insight"></p>
+    </div>
+  </section>
+
+  <!-- 3. Chi tiết đầy đủ -->
+  <section class="card">
+    <div class="block__head">
+      <h3>Lãi suất theo ngân hàng và kỳ hạn</h3>
+      <div class="table-tools">
+        <label class="inline">
+          <input type="checkbox" id="only-big4"> Chỉ nhóm Big4
+        </label>
+        <label class="inline">
+          Sắp theo
+          <select id="sort-tenor"></select>
+        </label>
+      </div>
+    </div>
+    <p class="legend">
+      <span class="swatch swatch--best"></span> cao nhất ở kỳ hạn đó
+      <span class="swatch swatch--worst"></span> thấp nhất ở kỳ hạn đó
+      <span class="legend__note">Lãi suất gửi tại quầy, đơn vị %/năm.</span>
+    </p>
+    <div class="table-scroll">
+      <table class="table table--rates" id="rate-table"></table>
+    </div>
+    <p class="legend__note" id="missing-banks"></p>
+  </section>
+</section>
+
+<!-- ========================== TAB: VĨ MÔ ========================== -->
+<section id="panel-macro" role="tabpanel" aria-labelledby="tab-macro" hidden>
+  <section class="card">
+    <h2>Chỉ số vĩ mô</h2>
+    <p class="explain">Phần phụ, dùng cho các chỉ số theo chuỗi thời gian như tỷ
+      giá USD/VND, lạm phát hay GDP bình quân đầu người. Khác với bảng lãi suất,
+      ở đây nhiều nguồn cùng đo một đại lượng, nên hệ thống chỉ dùng số liệu khi
+      các nguồn xác nhận lẫn nhau.</p>
+    <form id="form" autocomplete="off">
+      <label class="field">
+        <span class="field__label">Chủ đề <em>(bắt buộc)</em></span>
+        <input id="topic" type="text" required maxlength="200"
+               placeholder="Ví dụ: lạm phát Việt Nam, tỷ giá USD/VND">
+      </label>
+      <div class="range">
+        <label class="field">
+          <span class="field__sub">Từ ngày</span>
+          <input id="start" type="date" required>
+        </label>
+        <label class="field">
+          <span class="field__sub">Đến ngày</span>
+          <input id="end" type="date" required>
+        </label>
+        <label class="field">
+          <span class="field__sub">Mức so sánh</span>
+          <select id="compare">
+            <option value="auto">Tự động</option>
+            <option value="month">Theo tháng</option>
+            <option value="quarter">Theo quý</option>
+            <option value="year">Theo năm</option>
+          </select>
+        </label>
+        <div class="presets" role="group" aria-label="Chọn nhanh">
+          <button type="button" class="chip" data-days="365">1 năm</button>
+          <button type="button" class="chip" data-days="1825">5 năm</button>
+          <button type="button" class="chip" data-days="7670">20 năm</button>
+        </div>
+      </div>
+      <label class="field">
+        <span class="field__label">Ghi chú thêm</span>
+        <textarea id="notes" rows="2" maxlength="1000"
+                  placeholder="Không bắt buộc"></textarea>
+      </label>
+      <div class="actions">
+        <button type="submit" class="btn" id="submit">Chạy phân tích</button>
+        <p class="field__help">Mất khoảng hai tới ba phút.</p>
+      </div>
+    </form>
+  </section>
+
+  <section class="progress" id="progress" hidden>
+    <div class="progress__bar"><span></span></div>
+    <p class="progress__phase" id="phase" aria-live="polite">Đang chuẩn bị…</p>
+    <ol class="trace" id="trace" role="log"
+        aria-label="Quá trình tìm và kiểm tra nguồn"></ol>
+    <p class="trace__note">Mỗi dòng là một việc đang diễn ra ngay lúc này. Argo chỉ
+      mở những trang trong danh sách nguồn đã được duyệt trước cho từng lĩnh vực,
+      không tìm kiếm ngoài web.</p>
+  </section>
+
+  <section class="notice" id="notice" hidden>
+    <h2 id="notice-title">Chưa thể đưa ra kết quả</h2>
+    <p id="notice-text"></p>
+  </section>
+
+  <div id="caveats" hidden></div>
+
+  <div id="result" hidden>
+    <section class="card">
+      <div class="block__head">
+        <h2 id="result-title">Kết quả</h2>
+        <p class="block__note" id="result-window"></p>
+      </div>
+    </section>
+    <section class="card">
+      <h3>Nguồn dữ liệu</h3>
+      <p class="explain">Chỉ nguồn đạt đủ điểm tin cậy mới được dùng để dựng biểu đồ.</p>
+      <ul class="sources" id="sources"></ul>
+    </section>
+    <section class="card" id="tiles-card">
+      <h3>Tổng quan</h3>
+      <div class="tiles" id="tiles"></div>
+    </section>
+    <section class="card" id="chart-card">
+      <h3 id="chart-caption">Biểu đồ</h3>
+      <p class="explain" id="chart-explain"></p>
+      <figure class="figure"><img id="chart" alt=""></figure>
+      <div class="insight">
+        <p class="insight__label">Nhận định</p>
+        <p id="insight"></p>
+      </div>
+    </section>
+    <section class="card" id="anomaly-card">
+      <h3>Những mốc biến động khác thường</h3>
+      <ul class="anomalies" id="anomalies"></ul>
+    </section>
+  </div>
+</section>
+
+<!-- ====================== TAB: LỊCH SỬ CẬP NHẬT ====================== -->
+<section id="panel-updates" role="tabpanel" aria-labelledby="tab-updates" hidden>
+  <section class="card">
+    <h2>Lịch sử cập nhật</h2>
+    <p class="explain">Mỗi dòng là một lần Argo lấy bảng lãi suất. Cột đối chiếu
+      cho biết số liệu lần đó có khớp với công bố của BIDV hay không.</p>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr><th>Thời điểm</th><th>Ngân hàng</th><th>Số mức lãi suất</th>
+              <th>Nguồn</th><th>Đối chiếu</th></tr>
+        </thead>
+        <tbody id="updates-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="updates-empty" hidden>Chưa có lần cập nhật nào.</p>
+  </section>
+
+  <section class="card">
+    <h2>Lịch sử phân tích vĩ mô</h2>
+    <div class="table-scroll">
+      <table class="table">
+        <thead>
+          <tr><th>Thời điểm</th><th>Chủ đề</th><th>Khoảng</th>
+              <th>Nguồn đạt</th><th>Kết quả</th></tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="history-empty" hidden>Chưa có lần chạy nào.</p>
+  </section>
+</section>
+
+</main>
+
+<footer class="footer">
+  <p class="disclaimer">Lãi suất tổng hợp từ nguồn công khai, có thể chênh lệch
+    so với niêm yết tại quầy, không phải tư vấn đầu tư.</p>
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

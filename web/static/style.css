@@ -1,0 +1,903 @@
+/*
+ * Argo, for the person asking the question rather than the person who built it.
+ *
+ * Palette and type follow the project style guide -- washi paper, sumi ink,
+ * copper, one vermilion accent; Playfair for headings, Be Vietnam Pro for
+ * running text, JetBrains Mono for figures -- read through a Japanese
+ * landscape band at the top and left quiet below it.
+ *
+ * The restraint is the point. Every result on this page is a claim about real
+ * money, so the page carries one bright colour, one illustration, and nothing
+ * that competes with a number for attention. The copper and indigo are the
+ * same hues the chart engine uses, so a colour means the same thing on the
+ * page as it does inside the PNG.
+ *
+ * Committed to a single light look: the page frames charts rendered on paper,
+ * and a dark mode would leave them floating on the wrong ground.
+ */
+
+:root {
+  --paper:     #FAF5EA;
+  --paper-2:   #F4ECDC;
+  --sand:      #EFE4CC;
+  --rule:      #DDD2BD;
+  --ink:       #232F35;
+  --ink-2:     #3D4C54;
+  --ink-soft:  #6C7B82;
+  --night:     #162026;
+  --night-2:   #22343C;
+  --copper:    #B07A16;
+  --indigo:    #1E6E9E;
+  --moss:      #4B6A5E;
+  --gold:      #CE9C3E;
+  --vermilion: #C4291C;
+
+  --serif: "Playfair Display", Georgia, serif;
+  --sans:  "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --mono:  "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --shadow: 0 20px 46px -30px rgba(35, 47, 53, 0.6);
+}
+
+* { box-sizing: border-box; }
+
+/* The browser's own rule for [hidden] is `display: none` at the lowest
+   possible weight, so any class that sets `display` beats it. `.field` and
+   `.range` both set `display: flex`, which meant a fieldset written as
+   `<fieldset class="field" hidden>` rendered in full -- the period controls
+   showed up under "Giữa ngân hàng", where there is no period to choose. The
+   attribute has to win, because every panel on this page is toggled with it. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  background-image: radial-gradient(circle at 1px 1px,
+                    rgba(35, 47, 53, 0.045) 1px, transparent 0);
+  background-size: 18px 18px;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.7;
+}
+
+main { max-width: 900px; margin: 0 auto; padding: 0 22px 90px; }
+
+/* ----------------------------- masthead ----------------------------- */
+
+.masthead { position: relative; color: var(--paper); }
+
+.masthead__scene { display: block; width: 100%; height: clamp(280px, 27vw, 340px); }
+
+.masthead__text {
+  position: absolute;
+  inset: 0;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(30px, 5vw, 54px) 22px 0;
+}
+
+.masthead__text h1 {
+  font-family: var(--serif);
+  font-size: clamp(46px, 7vw, 76px);
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.45);
+}
+
+.masthead__text p {
+  max-width: 58ch;
+  margin: 0;
+  color: #E6DCC8;
+  font-size: clamp(14.5px, 1.4vw, 16px);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
+}
+
+/* ------------------------------- cards ------------------------------ */
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 26px 28px;
+  margin: 22px 0;
+  box-shadow: var(--shadow);
+}
+
+/* The card overlaps the landscape, but only just: at -40px it cut the last
+   line off the standfirst, which is the one sentence that says what this is. */
+
+
+.card h2 { font-family: var(--serif); font-size: 26px; margin: 0 0 4px; }
+.card h3 { font-family: var(--serif); font-size: 20px; margin: 0 0 6px; }
+
+/* Every label on this page is followed by one of these: what the thing above
+   it actually means, in a sentence, without jargon. */
+.explain {
+  margin: 0 0 18px;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  max-width: 74ch;
+}
+
+.block__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.block__note { margin: 0; color: var(--ink-soft); font-family: var(--mono); font-size: 12.5px; }
+
+/* -------------------------------- form ------------------------------ */
+
+form { display: flex; flex-direction: column; gap: 20px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field--wide { width: 100%; }
+
+.field__label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.field__help { margin: 0; color: var(--ink-soft); font-size: 13px; max-width: 68ch; }
+
+input[type="text"], input[type="date"] {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+input[type="date"] { font-family: var(--mono); font-size: 14.5px; }
+
+input:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 1px;
+  border-color: var(--copper);
+}
+
+.range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  padding-top: 4px;
+  border-top: 1px solid var(--rule);
+}
+
+.range .field { width: 190px; }
+
+.presets { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 3px; }
+
+.chip {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-2);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 7px 15px;
+  cursor: pointer;
+}
+
+.chip:hover, .chip[aria-pressed="true"] {
+  background: var(--sand);
+  border-color: var(--copper);
+  color: var(--ink);
+}
+
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+
+.btn {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--vermilion);
+  border: none;
+  border-radius: 999px;
+  padding: 13px 30px;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -14px rgba(196, 41, 28, 0.95);
+  transition: background 0.14s ease, transform 0.14s ease;
+}
+
+.btn:hover:not(:disabled) { background: #AC2418; transform: translateY(-1px); }
+.btn:disabled { opacity: 0.55; cursor: progress; transform: none; }
+
+/* ------------------------------ progress ---------------------------- */
+
+.progress { margin: 26px 0; }
+
+.progress__bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--sand);
+  overflow: hidden;
+}
+
+.progress__bar span {
+  display: block;
+  height: 100%;
+  width: 34%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--copper), var(--gold));
+  animation: slide 1.5s ease-in-out infinite;
+}
+
+@keyframes slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+
+.progress__phase {
+  margin: 10px 0 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* -------------------------------- trace ----------------------------- */
+/*
+ * The run, while it is running. Deliberately quiet: it sits under a spinner
+ * and it is finished with the moment the result appears, so it gets one
+ * monospace column and a coloured left edge per kind rather than icons,
+ * badges and a card of its own. The colours are the page's existing three --
+ * moss for something that worked, vermilion for something that did not,
+ * copper for a decision -- so a reader who has seen a result already knows
+ * what they mean.
+ */
+
+.trace {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+  border-left: 2px solid var(--rule);
+}
+
+.trace li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  padding: 3px 0 3px 12px;
+  border-left: 2px solid transparent;
+  margin-left: -2px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  /* New lines arrive one at a time under a spinner; without this they read
+     as the list jumping rather than as something happening. */
+  animation: trace-in 0.28s ease-out;
+}
+
+@keyframes trace-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.trace__at {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.trace__text { flex: 1 1 auto; }
+
+.trace__score {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--sand);
+  color: var(--ink-2);
+}
+
+/* Once the run is over the spinner is a lie, but the trace under it is not. */
+.progress--done .progress__bar { display: none; }
+
+/* A phase is the heading of everything indented under it. */
+.trace li.is-phase { color: var(--ink); font-weight: 500; margin-top: 6px; }
+.trace li.is-probe { border-left-color: var(--indigo); }
+.trace li.is-hit   { border-left-color: var(--moss); }
+.trace li.is-keep  { border-left-color: var(--moss); color: var(--ink); }
+.trace li.is-miss  { border-left-color: var(--rule); color: var(--ink-soft); }
+.trace li.is-drop  { border-left-color: var(--vermilion); }
+.trace li.is-skip  { border-left-color: var(--rule); color: var(--ink-soft); }
+.trace li.is-suspend { border-left-color: var(--copper); }
+.trace li.is-summary { border-left-color: var(--copper); color: var(--ink); font-weight: 500; }
+
+.trace li.is-keep .trace__score  { background: #E3EBE6; color: var(--moss); }
+.trace li.is-drop .trace__score  { background: #F6E3E0; color: var(--vermilion); }
+
+.trace__note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  max-width: 72ch;
+}
+
+/* ------------------------------- notice ----------------------------- */
+
+.notice {
+  margin: 26px 0;
+  padding: 24px 26px;
+  background: #FBEEEB;
+  border: 1px solid #E6C4BD;
+  border-left: 4px solid var(--vermilion);
+  border-radius: 4px;
+}
+
+.notice h2 { font-family: var(--serif); font-size: 21px; margin: 0 0 6px; color: #8E2318; }
+.notice p { margin: 0; }
+.notice__foot { margin-top: 12px; color: var(--ink-soft); font-size: 13.5px; }
+
+/* ------------------------------ sources ----------------------------- */
+
+.sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+
+.source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 13px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper-2);
+}
+
+.source--used { border-left: 4px solid var(--moss); }
+.source--unused { border-left: 4px solid var(--rule); opacity: 0.9; }
+
+.source__name { font-weight: 600; }
+.source__tier { color: var(--ink-soft); font-size: 13px; flex: 1 1 240px; }
+
+.badge {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 4px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badge--used { background: #E4EDE6; color: #33543F; border: 1px solid #B9CDBF; }
+.badge--unused { background: var(--sand); color: #6B5A3C; border: 1px solid var(--rule); }
+.badge--failed { background: #F6E4E1; color: #8E2318; border: 1px solid #E0BDB6; }
+.badge--score { background: #fff; color: var(--ink-2); border: 1px solid var(--rule); }
+
+/* ------------------------------- tiles ------------------------------ */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+  gap: 14px;
+}
+
+.tile {
+  padding: 16px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--paper-2);
+}
+
+.tile__label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* The figure wears ink, never a series colour: a number has to stay readable
+   before it is decorative. */
+.tile__value {
+  margin: 6px 0 3px;
+  font-family: var(--mono);
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tile__note { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+
+/* The unit rides below the figure at text size, so a long one like
+   "điểm phần trăm" cannot push the number itself onto three lines. */
+.tile__unit {
+  display: block;
+  margin-top: 1px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.tile__value.up { color: #2F6B3F; }
+.tile__value.down { color: #9A2B20; }
+
+/* ------------------------------ figure ------------------------------ */
+
+.figure { margin: 4px 0 0; }
+
+.figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+
+.insight {
+  margin-top: 18px;
+  padding: 18px 20px;
+  background: var(--sand);
+  border-left: 3px solid var(--copper);
+  border-radius: 0 3px 3px 0;
+}
+
+.insight__label {
+  margin: 0 0 5px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7A6534;
+}
+
+.insight p { margin: 0; }
+#insight { font-size: 15.5px; line-height: 1.75; }
+
+/* ----------------------------- anomalies ---------------------------- */
+
+.anomalies { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+
+.anomaly {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  padding: 11px 15px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--vermilion);
+  border-radius: 0 3px 3px 0;
+  background: var(--paper-2);
+}
+
+.anomaly__date { font-family: var(--mono); font-size: 13.5px; font-weight: 600; }
+.anomaly__move { font-family: var(--mono); font-size: 13.5px; }
+.anomaly__note { color: var(--ink-soft); font-size: 13px; }
+
+/* ------------------------------ footer ------------------------------ */
+
+.footer { margin-top: 40px; background: var(--night-2); color: #A7B8BE; }
+
+.footer p {
+  margin: 0;
+  padding: 22px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+@media (max-width: 620px) {
+  .card { padding: 20px 17px; }
+
+  .range .field { width: 100%; }
+}
+
+
+/* ------------------------------- tabs ------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 14px 22px 0;
+}
+
+.tab {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  padding: 10px 18px;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--vermilion);
+}
+
+.tab:hover { color: var(--ink); }
+
+/* ------------------------- form, extended --------------------------- */
+
+.group {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 16px 18px 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.group legend { padding: 0 6px; }
+
+.field__label em { font-style: normal; text-transform: none; letter-spacing: 0; }
+
+.field__sub {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.field--narrow { max-width: 320px; }
+
+select, textarea {
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 11px 13px;
+  width: 100%;
+}
+
+textarea { resize: vertical; line-height: 1.6; }
+
+select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--copper);
+  outline-offset: 1px;
+  border-color: var(--copper);
+}
+
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.checks { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.check input { accent-color: var(--moss); width: 15px; height: 15px; }
+
+/* ------------------------------ caveats ----------------------------- */
+
+.caveat {
+  margin: 14px 0;
+  padding: 13px 16px;
+  background: var(--sand);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 3px 3px 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* ------------------------------ history ----------------------------- */
+
+.table-scroll { overflow-x: auto; }
+
+.table td .sub {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+.table tbody tr:hover { background: var(--paper-2); }
+
+.empty {
+  margin: 18px 0 0;
+  padding: 22px;
+  text-align: center;
+  color: var(--ink-soft);
+  border: 1px dashed var(--rule);
+  border-radius: 4px;
+}
+
+
+/* =========================== dashboard ============================= */
+
+.masthead--slim .masthead__scene { height: clamp(150px, 14vw, 190px); }
+.masthead--slim .masthead__text { padding-top: clamp(20px, 3vw, 34px); }
+.masthead--slim .masthead__text h1 { font-size: clamp(34px, 5vw, 50px); margin-bottom: 4px; }
+.masthead--slim .masthead__text p { max-width: 62ch; font-size: 14px; }
+
+.dash__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 26px 0 6px;
+}
+
+.dash__head h2 { font-family: var(--serif); font-size: 27px; margin: 0; }
+
+.dash__meta {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+/* --- KPI row: the answer to "how are things", and nothing else --- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin: 18px 0 4px;
+}
+
+.kpi {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 20px 22px 18px;
+  box-shadow: var(--shadow);
+}
+
+.kpi__label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Big, and few. The figure is the point of the card. */
+.kpi__value {
+  margin: 8px 0 4px;
+  font-family: var(--mono);
+  font-size: clamp(34px, 5vw, 46px);
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi__value.good { color: #2F6B3F; }
+.kpi__value.bad  { color: #9A2B20; }
+.kpi__note { margin: 0; font-size: 13px; color: var(--ink-soft); }
+
+/* --- bank picker ------------------------------------------------- */
+
+.bank-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.pill {
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 5px 13px;
+  cursor: pointer;
+}
+
+.pill--on {
+  background: var(--sand);
+  border-color: var(--copper);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* --- rate table -------------------------------------------------- */
+
+.table-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.inline { display: inline-flex; align-items: center; gap: 6px; }
+.table-tools select { width: auto; padding: 5px 8px; font-size: 13px; }
+.table-tools input[type="checkbox"] { accent-color: var(--moss); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin: 6px 0 14px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+
+/* The shared swatch is nudged down to sit beside a two-line source label;
+   in a single-line legend that nudge reads as a misaligned dot. */
+.legend .swatch { width: 14px; height: 14px; margin: 0; border-radius: 3px;
+                  vertical-align: -2px; }
+.swatch--best { background: #CBE0D0; box-shadow: 0 0 0 1px #7FA88C; }
+.swatch--worst { background: #F1D6D1; box-shadow: 0 0 0 1px #C99A90; }
+.legend__note { color: var(--ink-soft); }
+
+.table--rates th[scope="row"] { font-weight: 600; padding-right: 16px; white-space: nowrap; }
+.table--rates td { padding: 9px 10px; }
+
+/* Colour carries one meaning only: best or worst at this tenor. The legend
+   above the table names both, so the colour is never the sole signal. */
+.cell--best  { background: #CBE0D0; color: #24512F; font-weight: 600; }
+.cell--worst { background: #F1D6D1; color: #7E2418; }
+
+.tag {
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--sand);
+  border: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  vertical-align: 2px;
+}
+
+.caveat--warn { border-left-color: var(--vermilion); background: #FBEEEB; }
+
+.disclaimer {
+  font-family: var(--sans) !important;
+  font-size: 12.5px !important;
+  max-width: 70ch;
+  margin: 0 auto !important;
+  letter-spacing: 0 !important;
+}
+
+/* --------------------------- the rate query form -------------------------- */
+/*
+ * Selection, not typing. The controls are checkboxes and radios underneath --
+ * a screen reader and a keyboard get the real thing -- and the chip look is
+ * painted on the label, so nothing here trades semantics for appearance.
+ */
+
+#rate-form fieldset {
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+#rate-form legend { padding: 0; }
+
+.chipset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chip-check { cursor: pointer; }
+
+/* Off-screen rather than display:none, which would take the control out of
+   the keyboard's reach along with the eye's. */
+.chip-check input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.chip-check span {
+  display: inline-block;
+  padding: 6px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 13.5px;
+  color: var(--ink-2);
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.chip-check input:checked + span {
+  background: var(--night);
+  border-color: var(--night);
+  color: var(--paper);
+}
+
+.chip-check input:focus-visible + span {
+  outline: 2px solid var(--copper);
+  outline-offset: 2px;
+}
+
+.chip-check:hover input:not(:checked) + span { border-color: var(--ink-soft); }
+
+.radioset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+/* A rule that separates the answered question above from the standing
+   overview below, without pretending to be a second page. */
+.section-rule {
+  margin: 38px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* ------------------------------ the answer -------------------------------- */
+
+.insight__list {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.insight__list li { margin-bottom: 3px; }
+
+/* The change sits under the rate rather than beside it: a reader scanning a
+   column for the biggest number should not have to step over a second one. */
+.delta {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-soft);
+  line-height: 1.3;
+}
+
+.delta--up   { color: var(--moss); }
+.delta--down { color: var(--vermilion); }
+.delta--none { color: var(--rule); cursor: help; }
+
+/* A cell whose number is genuinely absent, as opposed to zero. */
+.table--rates td.muted { color: var(--ink-soft); cursor: help; }
+
+.chart-pair { margin-bottom: 26px; }
+
+.chart-pair:last-child { margin-bottom: 0; }
+
+.chart-pair h4 {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Side by side where there is room, stacked where there is not. The two
+   charts answer different questions, so seeing them together is the point. */
+@media (min-width: 760px) {
+  .chart-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .chart-pair h4 { grid-column: 1 / -1; }
+}
