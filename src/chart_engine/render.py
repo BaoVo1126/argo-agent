@@ -1,12 +1,3 @@
-"""
-Render a ChartSpec to a PNG. matplotlib/seaborn only, always local.
-
-The renderer never decides what to draw -- `rules.choose` did that. It only
-knows how to draw each of the five shapes well: readable ticks, a legend that
-names units, and for the dual-axis case a colour link between each series and
-its own axis, without which a two-axis chart is a guessing game.
-"""
-
 from __future__ import annotations
 
 import datetime as dt
@@ -28,7 +19,6 @@ def _column(rows: list[dict], name: str) -> list:
 
 
 def _pairs(rows: list[dict], x: str, y: str) -> tuple[list, list]:
-    """x/y with rows missing either value dropped, so a gap stays a gap."""
     xs, ys = [], []
     for row in rows:
         if row.get(x) is not None and row.get(y) is not None:
@@ -42,13 +32,6 @@ def _pretty(name: str) -> str:
 
 
 def _format_axis(ax, values: list[float]) -> None:
-    """Tick labels with enough precision to tell the ticks apart.
-
-    Decimals are chosen from the *spread*, not the magnitude. Rounding to whole
-    numbers is right for a price in the millions and useless for interest
-    rates: a savings chart spanning 5.70% to 6.20% printed "6" at every tick,
-    six times down the axis, which is a chart that cannot be read at all.
-    """
     present = [v for v in values if v is not None]
     top = max((abs(v) for v in present), default=0)
     if top >= 1_000_000:
@@ -66,8 +49,6 @@ def _date_axis(ax, dates: list) -> None:
         return
     span_days = (max(dates) - min(dates)).days or 1
     ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=4, maxticks=9))
-    # Over several years the month is noise: "01/2008" invites the reader to
-    # wonder what happened in January when the figure is the whole year's.
     if span_days <= 400:
         fmt = "%d/%m"
     elif span_days <= 1200:
@@ -80,14 +61,6 @@ def _date_axis(ax, dates: list) -> None:
 def render(spec: ChartSpec, rows: list[dict], out_path: str | Path,
            subtitle: str = "", source_note: str = "",
            markers: dict[str, list[tuple]] | None = None) -> Path:
-    """Draw `spec` over `rows` and write a PNG. Returns the path written.
-
-    `markers` maps a column to the (x, y) points to ring -- the days the
-    timeseries module flagged as unusual. They are drawn as hollow rings in
-    the annotation colour rather than filled dots, so a marked point still
-    shows its own series colour underneath and the eye reads "this one" rather
-    than "a different series".
-    """
     theme.apply_style()
     sns.set_style("whitegrid", {"axes.facecolor": theme.PAPER, "grid.color": theme.GRID})
 
@@ -95,9 +68,6 @@ def render(spec: ChartSpec, rows: list[dict], out_path: str | Path,
     drawer = _DRAWERS[spec.chart_type]
     drawer(ax, spec, rows, markers or {})
     if markers and spec.chart_type is not ChartType.BAR:
-        # A bar chart highlights in `_draw_bar`: a ring drawn over a solid bar
-        # lands somewhere in its middle and reads as a smudge, while a repainted
-        # bar reads as "this one" immediately.
         _mark(ax, spec, markers)
 
     ax.set_title(spec.title or _pretty(", ".join(spec.ys) or str(spec.x)),
@@ -117,7 +87,6 @@ def render(spec: ChartSpec, rows: list[dict], out_path: str | Path,
 
 
 def _mark(ax, spec: ChartSpec, markers: dict[str, list[tuple]]) -> None:
-    """Ring the flagged points, on whichever axis their series lives."""
     axes = {spec.ys[0]: ax} if spec.ys else {}
     if spec.chart_type is ChartType.DUAL_AXIS_LINE and len(spec.ys) > 1:
         twins = [a for a in ax.figure.axes if a is not ax]
@@ -148,8 +117,6 @@ def _mark(ax, spec: ChartSpec, markers: dict[str, list[tuple]]) -> None:
             ax.legend(handles, labels, loc="best", ncol=min(3, len(handles)))
 
 
-# --- one drawer per chart type ------------------------------------------
-
 def _draw_line(ax, spec: ChartSpec, rows: list[dict], markers=None) -> None:
     for index, column in enumerate(spec.ys):
         xs, ys = _pairs(rows, spec.x, column)
@@ -157,8 +124,6 @@ def _draw_line(ax, spec: ChartSpec, rows: list[dict], markers=None) -> None:
         ax.plot(xs, ys, color=color, linewidth=2.0,
                 linestyle=theme.SERIES_DASHES[index % len(theme.SERIES_DASHES)],
                 label=spec.y_labels.get(column, _pretty(column)))
-        # A tinted area under a single line reads as volume; three of them
-        # overlapping read as a smear, and the lines are the comparison.
         if len(spec.ys) == 1:
             ax.fill_between(xs, ys, min(ys), color=color, alpha=0.08)
     _format_axis(ax, [v for c in spec.ys for v in _column(rows, c) if v is not None])
@@ -205,8 +170,6 @@ def _draw_bar(ax, spec: ChartSpec, rows: list[dict], markers=None) -> None:
     colors = [theme.VERMILION if x in flagged else theme.COPPER for x in xs]
     dated = bool(xs) and isinstance(xs[0], (dt.date, dt.datetime))
     if dated:
-        # Bars over dates need a real width in days, or matplotlib draws them
-        # one day wide and the chart looks like a comb.
         span = max(1, (max(xs) - min(xs)).days)
         width = max(1.0, span / max(len(xs), 1) * 0.7)
         ax.bar(xs, ys, color=colors, edgecolor=theme.INK, linewidth=0.5, width=width)
