@@ -1,0 +1,307 @@
+{
+  "runs": [
+    {
+      "started_at": "2026-09-07T18:37:02",
+      "topic": "giá xăng dầu bán lẻ",
+      "metric": "Giá xăng dầu bán lẻ",
+      "window": "19/02/2026 – 07/09/2026",
+      "seconds": 83.9,
+      "outcome": "refused",
+      "summary": "Đã dò qua danh sách nguồn đã duyệt của lĩnh vực này nhưng không trang nào công bố bảng số liệu theo ngày trong khoảng bạn chọn",
+      "sources": []
+    },
+    {
+      "started_at": "2026-09-07T18:26:35",
+      "topic": "tỷ lệ thất nghiệp Việt Nam",
+      "metric": "失业率",
+      "window": "01/01/2010 – 31/12/2024",
+      "seconds": 191.0,
+      "outcome": "refused",
+      "summary": "Đã dò qua danh sách nguồn đã duyệt của lĩnh vực này nhưng không trang nào công bố bảng số liệu theo ngày trong khoảng bạn chọn",
+      "sources": []
+    },
+    {
+      "started_at": "2026-09-07T17:28:46",
+      "topic": "tỷ lệ thất nghiệp Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2000 – 01/09/2026",
+      "seconds": 87.3,
+      "outcome": "done",
+      "summary": "27 mốc, +6.61 điểm phần trăm cả kỳ",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 26
+        },
+        {
+          "label": "IMF",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 27
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-07T17:26:57",
+      "topic": "giá vàng SJC",
+      "metric": "giá vàng SJC",
+      "window": "10/05/2026 – 07/09/2026",
+      "seconds": 65.3,
+      "outcome": "refused",
+      "summary": "Đã dò qua danh sách nguồn đã duyệt của lĩnh vực này nhưng không trang nào công bố bảng số liệu theo ngày trong khoảng bạn chọn",
+      "sources": []
+    },
+    {
+      "started_at": "2026-09-02T17:05:38",
+      "topic": "lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2005 – 01/09/2026",
+      "seconds": 106.7,
+      "outcome": "done",
+      "summary": "22 mốc, -3.38 điểm phần trăm cả kỳ",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 21
+        },
+        {
+          "label": "IMF",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 22
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T17:02:08",
+      "topic": "lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2005 – 01/09/2026",
+      "seconds": 59.8,
+      "outcome": "refused",
+      "summary": "Không nguồn nào trả về số liệu dùng được trong khoảng thời gian đã chọn",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "IMF",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T15:16:24",
+      "topic": "Lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "02/09/2025 – 02/09/2026",
+      "seconds": 61.5,
+      "outcome": "refused",
+      "summary": "Nguồn có điểm cao nhất chỉ đạt 55/100, trong khi mức tối thiểu để được dùng là 60/100",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "IMF",
+          "score": 55,
+          "accepted": false,
+          "ok": true,
+          "rows": 1
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T15:06:51",
+      "topic": "lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2005 – 01/09/2026",
+      "seconds": 233.4,
+      "outcome": "done",
+      "summary": "22 mốc, -3.38 điểm phần trăm cả kỳ",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 21
+        },
+        {
+          "label": "IMF",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 22
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T15:06:21",
+      "topic": "Giá nhà ở thành Phố Hồ Chí Minh",
+      "metric": "Giá nhà ở TP.HCM",
+      "window": "02/09/2025 – 02/09/2026",
+      "seconds": 193.2,
+      "outcome": "refused",
+      "summary": "Không nguồn nào trả về số liệu dùng được trong khoảng thời gian đã chọn",
+      "sources": [
+        {
+          "label": "batdongsan.com.vn",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "mogi.vn",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "muaban.net",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "guland.vn",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "thuvienphapluat.vn",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        },
+        {
+          "label": "nhatot.com",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T14:57:41",
+      "topic": "giá vàng SJC",
+      "metric": "Giá vàng SJC",
+      "window": "02/09/2025 – 02/09/2026",
+      "seconds": 46.5,
+      "outcome": "refused",
+      "summary": "Không còn nguồn nào để lấy số liệu sau khi áp dụng các ràng buộc bạn đặt ra",
+      "sources": []
+    },
+    {
+      "started_at": "2026-09-02T14:56:21",
+      "topic": "giá vàng SJC",
+      "metric": "Giá vàng SJC",
+      "window": "04/06/2026 – 02/09/2026",
+      "seconds": 56.3,
+      "outcome": "refused",
+      "summary": "Không còn nguồn nào để lấy số liệu sau khi áp dụng các ràng buộc bạn đặt ra",
+      "sources": []
+    },
+    {
+      "started_at": "2026-09-02T14:53:04",
+      "topic": "lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2005 – 01/09/2026",
+      "seconds": 119.0,
+      "outcome": "done",
+      "summary": "22 mốc, -3.38 điểm phần trăm cả kỳ",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 21
+        },
+        {
+          "label": "IMF",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 22
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T14:47:15",
+      "topic": "lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2005 – 01/09/2026",
+      "seconds": 140.8,
+      "outcome": "done",
+      "summary": "22 mốc, -3.38 điểm phần trăm cả kỳ",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 21
+        },
+        {
+          "label": "IMF",
+          "score": 65,
+          "accepted": true,
+          "ok": true,
+          "rows": 22
+        }
+      ]
+    },
+    {
+      "started_at": "2026-09-02T12:06:40",
+      "topic": "lạm phát Việt Nam",
+      "metric": "Lạm phát Việt Nam",
+      "window": "01/01/2005 – 01/09/2026",
+      "seconds": 38.4,
+      "outcome": "refused",
+      "summary": "Nguồn có điểm cao nhất chỉ đạt 55/100, trong khi mức tối thiểu để được dùng là 60/100",
+      "sources": [
+        {
+          "label": "World Bank",
+          "score": 55,
+          "accepted": false,
+          "ok": true,
+          "rows": 21
+        },
+        {
+          "label": "IMF",
+          "score": 0,
+          "accepted": false,
+          "ok": false,
+          "rows": 0
+        }
+      ]
+    }
+  ]
+}

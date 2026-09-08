@@ -1,0 +1,706 @@
+{
+ "snapshots": [
+  {
+   "captured_at": "2026-09-02T17:20:52",
+   "source": "webgia.com",
+   "crosscheck": {
+    "bank": "BIDV",
+    "tenors_compared": [
+     1,
+     3,
+     6,
+     9,
+     12,
+     24,
+     36
+    ],
+    "mismatched": [],
+    "agrees": true,
+    "checked": true
+   },
+   "quotes": [
+    {
+     "bank": "Agribank",
+     "tenor_months": 1,
+     "rate_pct": 2.6,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 3,
+     "rate_pct": 2.9,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 6,
+     "rate_pct": 4.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 9,
+     "rate_pct": 4.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 1,
+     "rate_pct": 2.1,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 3,
+     "rate_pct": 2.4,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 6,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 9,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 36,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 1,
+     "rate_pct": 3.2,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 3,
+     "rate_pct": 3.6,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 6,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 9,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 12,
+     "rate_pct": 4.85,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 24,
+     "rate_pct": 5.7,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 36,
+     "rate_pct": 5.7,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 1,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 3,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 6,
+     "rate_pct": 5.5,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 36,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 1,
+     "rate_pct": 2.1,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 3,
+     "rate_pct": 2.4,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 6,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 9,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 36,
+     "rate_pct": 5.3,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 1,
+     "rate_pct": 2.1,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 3,
+     "rate_pct": 2.4,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 6,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 9,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 36,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 1,
+     "rate_pct": 4.75,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 6,
+     "rate_pct": 6.2,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 12,
+     "rate_pct": 6.2,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 1,
+     "rate_pct": 3.7,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 3,
+     "rate_pct": 4.0,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 6,
+     "rate_pct": 4.5,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 9,
+     "rate_pct": 4.5,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 12,
+     "rate_pct": 4.95,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 24,
+     "rate_pct": 5.9,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 36,
+     "rate_pct": 5.9,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 1,
+     "rate_pct": 4.75,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 3,
+     "rate_pct": 4.75,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 6,
+     "rate_pct": 6.0,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 12,
+     "rate_pct": 6.2,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 24,
+     "rate_pct": 6.3,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 36,
+     "rate_pct": 6.3,
+     "board": "online"
+    }
+   ]
+  },
+  {
+   "captured_at": "2026-09-07T19:06:52",
+   "source": "webgia.com",
+   "crosscheck": {
+    "bank": "BIDV",
+    "tenors_compared": [
+     1,
+     3,
+     6,
+     9,
+     12,
+     24,
+     36
+    ],
+    "mismatched": [],
+    "agrees": true,
+    "checked": true
+   },
+   "quotes": [
+    {
+     "bank": "Agribank",
+     "tenor_months": 1,
+     "rate_pct": 2.6,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 3,
+     "rate_pct": 2.9,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 6,
+     "rate_pct": 4.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 9,
+     "rate_pct": 4.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "Agribank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 1,
+     "rate_pct": 2.1,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 3,
+     "rate_pct": 2.4,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 6,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 9,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "BIDV",
+     "tenor_months": 36,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 1,
+     "rate_pct": 3.2,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 3,
+     "rate_pct": 3.6,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 6,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 9,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 12,
+     "rate_pct": 4.85,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 24,
+     "rate_pct": 5.7,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 36,
+     "rate_pct": 5.7,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 1,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 3,
+     "rate_pct": 4.2,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 6,
+     "rate_pct": 5.5,
+     "board": "counter"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 36,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 1,
+     "rate_pct": 2.1,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 3,
+     "rate_pct": 2.4,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 6,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 9,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "Vietcombank",
+     "tenor_months": 36,
+     "rate_pct": 5.3,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 1,
+     "rate_pct": 2.1,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 3,
+     "rate_pct": 2.4,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 6,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 9,
+     "rate_pct": 3.5,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 12,
+     "rate_pct": 5.9,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "VietinBank",
+     "tenor_months": 36,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 1,
+     "rate_pct": 4.75,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 6,
+     "rate_pct": 6.2,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 12,
+     "rate_pct": 6.2,
+     "board": "counter"
+    },
+    {
+     "bank": "VPBank",
+     "tenor_months": 24,
+     "rate_pct": 6.0,
+     "board": "counter"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 1,
+     "rate_pct": 3.7,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 3,
+     "rate_pct": 4.0,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 6,
+     "rate_pct": 4.5,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 9,
+     "rate_pct": 4.5,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 12,
+     "rate_pct": 4.95,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 24,
+     "rate_pct": 5.9,
+     "board": "online"
+    },
+    {
+     "bank": "MB",
+     "tenor_months": 36,
+     "rate_pct": 5.9,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 1,
+     "rate_pct": 4.75,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 3,
+     "rate_pct": 4.75,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 6,
+     "rate_pct": 6.0,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 12,
+     "rate_pct": 6.2,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 24,
+     "rate_pct": 6.3,
+     "board": "online"
+    },
+    {
+     "bank": "TPBank",
+     "tenor_months": 36,
+     "rate_pct": 6.3,
+     "board": "online"
+    }
+   ]
+  }
+ ]
+}
