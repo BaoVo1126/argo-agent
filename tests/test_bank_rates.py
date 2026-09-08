@@ -1,15 +1,5 @@
-"""
-The savings-rate board: parsing it, storing it, and comparing banks.
-
-None of these need a browser. The scraping is one `page.evaluate` whose output
-shape is fixed here as literal tables, which is the part that actually breaks
-when a site is redesigned.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
-
 import pytest
 
 from modes.research import bank_rates, snapshots
@@ -32,8 +22,6 @@ BIDV_ROW = ["BIDV", "0,10", "2,10", "2,40", "3,50", "3,50",
 VPBANK_ROW = ["VPBank", "-", "4,75", "-", "6,20", "-", "6,20", "-", "-", "6,00", "-"]
 
 
-# --- parsing --------------------------------------------------------------
-
 def test_the_wanted_banks_are_read_with_their_tenors():
     quotes = bank_rates.parse_board([board(COUNTER, BIDV_ROW)])
     rates = {q.tenor_months: q.rate_pct for q in quotes}
@@ -42,7 +30,6 @@ def test_the_wanted_banks_are_read_with_their_tenors():
 
 
 def test_promotional_tenors_are_dropped():
-    """13 and 18 months are on the board and are not choices anyone compares."""
     quotes = bank_rates.parse_board([board(COUNTER, BIDV_ROW)])
     assert {q.tenor_months for q in quotes} == set(bank_rates.TENORS)
 
@@ -61,8 +48,6 @@ def test_banks_outside_the_watch_list_are_ignored():
 
 
 def test_the_two_boards_are_kept_apart():
-    """A bank quoting nothing at the counter may pay more online; merging the
-    two would report it as offering nothing."""
     counter = ["TPBank", "-", "4,20", "4,20", "5,50", "-", "-", "-", "5,90", "-", "6,00"]
     online = ["TPBank", "-", "4,75", "4,75", "6,00", "-", "6,20", "-", "6,20", "6,30", "6,30"]
     quotes = bank_rates.parse_board([board(COUNTER, counter), board(ONLINE, online)])
@@ -74,13 +59,11 @@ def test_the_two_boards_are_kept_apart():
 
 
 def test_a_table_that_is_not_a_rate_board_is_skipped():
-    """The page also carries gold, fuel and exchange-rate tables."""
     fuel = {"heading": "Giá xăng dầu", "rows": [["Sản phẩm", "Vùng 1", "Vùng 2"]]}
     assert bank_rates.parse_board([fuel]) == []
 
 
 def test_a_rate_board_with_no_recognisable_heading_is_skipped():
-    """Reading an unlabelled table would mean guessing which product it is."""
     assert bank_rates.parse_board([board("Bảng nào đó", BIDV_ROW)]) == []
 
 
@@ -96,12 +79,10 @@ def test_bidv_own_board_is_read_from_its_endpoint():
 
 
 def test_an_impossible_rate_is_a_parse_error_not_an_offer():
-    assert bank_rates._rate("87,50") is None      # outside any savings range
+    assert bank_rates._rate("87,50") is None   
     assert bank_rates._rate("6,20") == 6.20
     assert bank_rates._rate("—") is None
 
-
-# --- comparing ------------------------------------------------------------
 
 def snapshot(day: str, rates: dict[str, dict[int, float]]) -> RateSnapshot:
     quotes = [RateQuote(bank, tenor, value, "counter")
@@ -111,8 +92,6 @@ def snapshot(day: str, rates: dict[str, dict[int, float]]) -> RateSnapshot:
 
 
 def test_best_and_worst_are_found_per_tenor_across_banks():
-    """A rate comparison answers "who pays most for this term", which is a
-    question about a column, not about one bank's own spread of terms."""
     latest = snapshot("2026-09-01", {
         "VPBank": {12: 6.20, 24: 6.00},
         "MB": {12: 4.85, 24: 5.70},
@@ -141,8 +120,6 @@ def test_the_headline_numbers_are_the_top_rate_and_the_average():
 
 
 def test_one_capture_has_no_comparison_to_make():
-    """A first run cannot say what changed, and saying "0.00" would claim the
-    market held steady when nothing has been compared."""
     result = bank_rates.compare([snapshot("2026-09-01", {"BIDV": {12: 5.90}})])
     assert result.average_change is None
     assert result.has_history is False
@@ -167,17 +144,13 @@ def test_big_four_are_marked():
     assert marked == {"BIDV": True, "VPBank": False}
 
 
-# --- the sentence under the chart ----------------------------------------
-
 def test_the_insight_is_a_template_and_quotes_the_computed_numbers():
-    """No model writes this. There is one fact to state and a template states
-    it exactly, which removes the drift and the guards that would catch it."""
     result = bank_rates.compare([snapshot("2026-09-01", {
         "VPBank": {12: 6.20}, "MB": {12: 4.80},
     })])
     line = bank_rates.insight_line(result)
     assert "VPBank" in line
-    assert "6,20%/năm" in line          # Vietnamese decimal separator
+    assert "6,20%/năm" in line          
     assert "5,50%/năm" in line
 
 
@@ -187,12 +160,7 @@ def test_the_insight_reports_a_flat_market_as_flat():
     assert "không đổi" in bank_rates.insight_line(bank_rates.compare(history))
 
 
-# --- storage --------------------------------------------------------------
-
 def test_two_captures_on_one_day_replace_rather_than_accumulate(tmp_path):
-    """Running twice in an afternoon is a person checking their work. Keeping
-    both would put two points on one day and make a still board look like
-    movement."""
     path = tmp_path / "snap.json"
     snapshots.append(snapshot("2026-09-01", {"BIDV": {12: 5.90}}), path)
     snapshots.append(snapshot("2026-09-01", {"BIDV": {12: 6.20}}), path)
@@ -227,12 +195,7 @@ def test_a_corrupt_store_loses_the_history_rather_than_the_dashboard(tmp_path):
     path.write_text("{ not json", encoding="utf-8")
     assert snapshots.load(path) == []
 
-
-# --- the trend chart ------------------------------------------------------
-
 def test_one_capture_draws_no_trend(tmp_path):
-    """A line through one point reads as "the rate did not move" when it means
-    "we have only looked once"."""
     history = [snapshot("2026-09-01", {"BIDV": {12: 5.90}})]
     assert bank_rates.render_trend(history, ["BIDV"], tmp_path / "t.png") is None
 
@@ -244,11 +207,9 @@ def test_two_captures_draw_a_trend(tmp_path):
     assert path is not None and path.exists()
 
 
-def test_no_more_than_three_banks_are_plotted(tmp_path):
-    """Three is the number of series colours that stay distinguishable; a
-    fourth line would need a hue that does not."""
+def test_no_more_than_three_banks_are_plotted(tmp_path)
     rates = {bank: {12: 5.0 + i} for i, bank in enumerate(["A", "B", "C", "D"])}
     history = [snapshot("2026-09-01", rates), snapshot("2026-09-02", rates)]
     rows = bank_rates.trend_rows(history, ["A", "B", "C", "D"])
-    assert len(rows[0]) == 5          # date + four banks, before the cap
+    assert len(rows[0]) == 5         
     assert bank_rates.MAX_TREND_BANKS == 3
