@@ -1,11 +1,6 @@
-"""Trend, period comparison and anomalies -- the numbers the insight text quotes."""
-
 from __future__ import annotations
-
 import datetime as dt
-
 import pytest
-
 from src.timeseries import analyse
 
 BASE = dt.date(2026, 6, 1)
@@ -35,7 +30,6 @@ def test_month_on_month_appears_once_there_are_two_months():
 
 
 def test_a_short_range_still_gets_an_honest_comparison():
-    """No month fits, so the range is split in half rather than left blank."""
     result = analyse(rows([100.0] * 5 + [110.0] * 5))
     assert len(result.periods) == 1
     assert "Nửa" in result.periods[0].label
@@ -56,16 +50,12 @@ def test_a_quiet_series_has_no_anomalies():
 
 
 def test_carried_forward_days_do_not_turn_ordinary_moves_into_anomalies():
-    """A bank quotes nothing at the weekend, so the series repeats its last
-    value. Those zero steps are the publishing calendar, not a still market:
-    counting them when setting the threshold shrinks it until every real move
-    looks extreme."""
     values, current = [], 100.0
     for day in range(70):
-        if day % 7 in (5, 6):          # weekend: carried forward
+        if day % 7 in (5, 6):      
             values.append(current)
             continue
-        current *= 1.001               # a steady, unremarkable weekday move
+        current *= 1.001              
         values.append(current)
 
     found = analyse(rows(values)).anomalies
@@ -89,15 +79,11 @@ def test_rows_are_sorted_before_anything_is_computed():
     assert result.first_value == 100.0 and result.last_value == 110.0
 
 
-# --- what the series measures decides how its movement is expressed --------
-
 def yearly(values: list[float], field: str = "value") -> list[dict]:
     return [{"date": dt.date(2005 + i, 1, 1), field: v} for i, v in enumerate(values)]
 
 
 def test_a_rate_moves_in_percentage_points_not_percent():
-    """Inflation going from 0.63% to 2.67% is a rise of two points. Calling it
-    a rise of 322% is arithmetically true and tells the reader nothing."""
     result = analyse(yearly([0.63, 2.67] + [2.67] * 18), unit="%")
     assert result.is_rate
     assert result.unit_label == "điểm phần trăm"
@@ -121,9 +107,6 @@ def test_the_anomaly_on_a_rate_is_measured_in_points_too():
 
 
 def test_a_rate_whose_base_is_near_zero_does_not_explode():
-    """The relative rule divides by the previous value, so a year at 0.05%
-    turns any move into thousands of percent. Points do not have that
-    failure mode, which is the other half of why rates use them."""
     found = analyse(yearly([0.05, 1.0] + [1.0] * 18), unit="%").anomalies
     assert all(abs(a.change) < 5 for a in found)
 
