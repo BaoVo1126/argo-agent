@@ -1,19 +1,4 @@
-"""
-One JSON completion from the local model.
-
-The agent loop talks to a model through `decide()` and gets an action back.
-Planning and insight-writing need something different -- a small JSON object --
-and bending the action interface to carry them would put two unrelated
-contracts in one place.
-
-The schema is described in the prompt and enforced in Python. A model that
-returns a well-typed object full of invented content passes any schema check,
-so the callers in `planner.py` and `insight.py` do their own checking on top;
-that is where the real guard lives, and it has to exist regardless.
-"""
-
 from __future__ import annotations
-
 import json
 import re
 import urllib.request
@@ -24,11 +9,8 @@ _FENCE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 
 
 class LLMUnavailable(RuntimeError):
-    """No model could be reached, or it returned nothing usable."""
-
 
 def _extract_json(text: str) -> dict:
-    """Pull an object out of a reply, tolerating code fences and preamble."""
     text = (text or "").strip()
     if not text:
         raise LLMUnavailable("model returned an empty reply")
@@ -55,7 +37,6 @@ def _extract_json(text: str) -> dict:
 
 def complete_json(system: str, prompt: str, model: str | None = None,
                   temperature: float = 0.0) -> dict:
-    """Ask for one JSON object. Raises LLMUnavailable rather than guessing."""
     from src.llm.discover import NoUsableModel, choose
 
     try:
@@ -70,8 +51,6 @@ def complete_json(system: str, prompt: str, model: str | None = None,
             {"role": "user", "content": prompt},
         ],
         "stream": False,
-        # Ollama's JSON mode. It constrains the shape, not the content -- the
-        # content is what the callers check.
         "format": "json",
         "options": {"temperature": temperature, "num_ctx": 8192},
     }
