@@ -1,29 +1,4 @@
-"""
-Savings rates across Vietnamese banks: scrape, cross-check, store, compare.
-
-**Why the credibility rules here are not the ones in `src/scoring`.** That
-module scores a source partly on whether an independent source reports the
-same value, which is the right question when two bodies are measuring one
-truth -- World Bank and IMF both estimating one inflation rate. It is the
-wrong question here. Vietcombank's twelve-month rate and Techcombank's are not
-two readings of one number; they are two different banks' decisions, and
-"they disagree" is the entire point of the comparison. So a source here is
-judged on one thing only: has it actually returned a board, and does the one
-bank we can check independently still match.
-
-**Where the board comes from, and why.** Nine of the ten banks asked for do
-not serve their rate table to a browser at all: Vietcombank answers
-ERR_HTTP2_PROTOCOL_ERROR on every rate path, TPBank times out, and Agribank,
-ACB, VietinBank, Techcombank, MB, VPBank and Sacombank render pages whose DOM
-contains no rate. Only BIDV publishes a usable endpoint. So the board is taken
-from an aggregator that covers seven of the ten in one table, and BIDV's own
-endpoint is fetched on every run as an accuracy check on it. When the two stop
-agreeing the dashboard says so; that disagreement is the only continuous
-evidence available about whether the aggregator is current.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
 import re
 from dataclasses import dataclass, field
@@ -37,19 +12,11 @@ BOARD_URL = "https://webgia.com/lai-suat/"
 BIDV_PAGE = "https://bidv.com.vn/vn/tra-cuu-lai-suat"
 BIDV_ENDPOINT = "/ServicesBIDV/InterestDetailServlet"
 
-# The tenors a saver actually chooses between. 13 and 18 months exist on the
-# board and are dropped: they are promotional variants that clutter a
-# comparison without changing what it says.
+
 TENORS = (1, 3, 6, 9, 12, 24, 36)
 
-# The headline tenor. Every KPI and the trend chart use it, because it is the
-# one most savings decisions are made on and the one every bank quotes.
 HEADLINE_TENOR = 12
 
-# Banks in scope, mapped from the name the board prints to the name shown.
-# Techcombank, ACB and Sacombank are absent: the aggregator does not carry
-# them and their own sites do not serve a rate table, so they are listed here
-# as missing rather than quietly omitted.
 WANTED = {
     "vietcombank": "Vietcombank",
     "bidv": "BIDV",
@@ -63,17 +30,8 @@ UNAVAILABLE = ("Techcombank", "ACB", "Sacombank")
 
 BIG_FOUR = ("Vietcombank", "BIDV", "VietinBank", "Agribank")
 
-# Two readings of the same bank's own published rate should be identical; a
-# tenth of a point of slack absorbs a rounding difference and nothing else.
 CROSSCHECK_TOLERANCE = 0.05
 
-
-# --- scraping -------------------------------------------------------------
-
-# Each table is returned with the nearest heading above it, because the page
-# publishes two rate boards that look identical and mean different things --
-# money paid in at a counter and money paid in through the app. Picking by
-# position would silently swap them the day an advert block moves.
 _BOARD_JS = r"""
 () => Array.from(document.querySelectorAll('table')).map(t => {
   let heading = '';
@@ -99,7 +57,6 @@ async (path) => {
 
 
 def _rate(cell: str) -> float | None:
-    """A published rate, or None for the dashes the board uses for 'not offered'."""
     text = (cell or "").strip().replace("%", "").replace(",", ".")
     if not text or text in {"-", "--", "—"}:
         return None
@@ -107,7 +64,6 @@ def _rate(cell: str) -> float | None:
         value = float(text)
     except ValueError:
         return None
-    # A savings rate outside this range is a parse error, not an offer.
     return value if 0 <= value <= 25 else None
 
 
@@ -121,7 +77,6 @@ def _normalise(name: str) -> str:
 
 
 def _board_kind(heading: str) -> str | None:
-    """Which product a table is about, read off its own heading."""
     text = (heading or "").lower()
     if "trực tuyến" in text or "online" in text:
         return "online"
@@ -131,13 +86,6 @@ def _board_kind(heading: str) -> str | None:
 
 
 def parse_board(tables: list) -> list[RateQuote]:
-    """Pull the wanted banks out of both rate boards on the page.
-
-    The page holds eight tables -- gold, fuel, exchange rates, a loan
-    calculator, and two rate boards. Each is identified by its own tenor
-    header and its own heading, so neither a new advert block nor a reordering
-    changes which table is read as what.
-    """
     quotes: list[RateQuote] = []
     for entry in tables:
         heading = entry.get("heading", "") if isinstance(entry, dict) else ""
@@ -170,8 +118,6 @@ def _parse_one(table: list, board: str) -> list[RateQuote]:
         display = WANTED.get(_normalise(row[0]))
         if not display:
             continue
-        # The bank name occupies the first cell, so the rate columns are
-        # offset by one from the header they belong to.
         for position, tenor in columns.items():
             value = _rate(row[position + 1]) if position + 1 < len(row) else None
             if value is not None:
@@ -180,7 +126,6 @@ def _parse_one(table: list, board: str) -> list[RateQuote]:
 
 
 def parse_bidv(payload: dict) -> dict[int, float]:
-    """BIDV's own VND board, tenor -> rate."""
     rows = ((payload or {}).get("hcm") or {}).get("data") or []
     out: dict[int, float] = {}
     for row in rows:
@@ -203,7 +148,6 @@ class CaptureResult:
 
 def capture(headless: bool | None = None,
             log: Callable[[str], None] | None = None) -> CaptureResult:
-    """Read the board and BIDV's own page, cross-check, return one snapshot."""
     emit = log or (lambda _line: None)
     result = CaptureResult()
     quotes: list[RateQuote] = []
@@ -257,9 +201,6 @@ def capture(headless: bool | None = None,
     )
     return result
 
-
-# --- what the dashboard needs --------------------------------------------
-
 @dataclass
 class BankRow:
     bank: str
@@ -277,10 +218,8 @@ class Comparison:
     previous_at: str = ""
     tenors: list[int] = field(default_factory=list)
     rows: list[BankRow] = field(default_factory=list)
-    # Highest / lowest per tenor, so the table can colour them.
     highest: dict[int, str] = field(default_factory=dict)
     lowest: dict[int, str] = field(default_factory=dict)
-    # Headline figures.
     top_bank: str = ""
     top_rate: float = 0.0
     average: float = 0.0
@@ -296,7 +235,6 @@ class Comparison:
 
 def compare(history: list[RateSnapshot], tenor: int = HEADLINE_TENOR,
             board: str = "counter") -> Comparison | None:
-    """Turn the stored captures into everything the dashboard shows."""
     if not history:
         return None
 
@@ -313,9 +251,7 @@ def compare(history: list[RateSnapshot], tenor: int = HEADLINE_TENOR,
         rates = {q.tenor_months: q.rate_pct for q in latest.quotes
                  if q.bank == bank and q.board == board}
         result.rows.append(BankRow(bank=bank, rates=rates, is_big_four=bank in BIG_FOUR))
-
-    # Sorted by the headline tenor, best first: the table's first job is to
-    # answer "who pays most", and a reader should not have to scan for it.
+    
     result.rows.sort(key=lambda r: r.rates.get(tenor, -1), reverse=True)
 
     for column in result.tenors:
@@ -343,17 +279,10 @@ def compare(history: list[RateSnapshot], tenor: int = HEADLINE_TENOR,
 
 
 def _vn(value: float) -> str:
-    """A number written the way the rest of the page writes them: 6,20."""
     return f"{value:.2f}".replace(".", ",")
 
 
 def insight_line(comparison: Comparison, tenor: int = HEADLINE_TENOR) -> str:
-    """The sentence under the chart. A template, filled from computed numbers.
-
-    No model writes this. There is one fact to state and a template states it
-    exactly, which removes both the drift and the two guards that would
-    otherwise be needed to catch it.
-    """
     if not comparison or not comparison.top_bank:
         return ""
 
@@ -377,37 +306,18 @@ def insight_line(comparison: Comparison, tenor: int = HEADLINE_TENOR) -> str:
     return " ".join(parts)
 
 
-# --- comparing banks, and comparing periods -------------------------------
-#
-# Both of these are functions over the snapshot list that already exists --
-# bank x tenor x capture date -- rather than a second store or a second
-# pipeline. `compare()` above answers one fixed question for the dashboard:
-# who pays most at the headline tenor today. These answer the questions a
-# person asks with the query form, where the banks, the tenors and the two
-# periods are all chosen. The data underneath is identical.
-
-
 @dataclass(frozen=True)
 class BankGap:
-    """How far apart two banks are at one tenor, on one board, on one day."""
-
     higher: str
     lower: str
     tenor: int
-    gap: float                      # percentage points, always >= 0
+    gap: float                 
     higher_rate: float = 0.0
     lower_rate: float = 0.0
 
 
 def gaps_at(snapshot: RateSnapshot, tenor: int, banks: list[str],
             board: str = "counter") -> list[BankGap]:
-    """Every pair of the chosen banks at one tenor, widest gap first.
-
-    Pairs rather than a ranking because the sentence a reader wants is "A pays
-    more than B", and a ranking makes them do the subtraction. Ordered by gap
-    so the caller can take the first one and have the most informative
-    comparison rather than an arbitrary one.
-    """
     rates = snapshot.by_tenor(tenor, board)
     offered = [(bank, rates[bank]) for bank in banks if bank in rates]
 
@@ -423,30 +333,17 @@ def gaps_at(snapshot: RateSnapshot, tenor: int, banks: list[str],
 
 @dataclass
 class RateChange:
-    """One bank's rate at one tenor, this period against another."""
-
     bank: str
     tenor: int
     current: float | None = None
     previous: float | None = None
     change: float | None = None
-    # Why there is no number, in a sentence a customer can read. A rate board
-    # is a history of captures rather than a daily publication, so "nobody
-    # looked during that period" is an ordinary answer and printing a zero for
-    # it would be a lie about the rate rather than about the record.
     note: str = ""
 
 
 def rate_changes(history: list[RateSnapshot], banks: list[str], tenors: list[int],
                  current: tuple[dt.date, dt.date], previous: tuple[dt.date, dt.date],
                  board: str = "counter") -> list[RateChange]:
-    """Every chosen bank and tenor, compared across two explicit windows.
-
-    The comparison itself is `src/timeseries.compare_windows`, which is the
-    same arithmetic `analyse()` runs on a macro series. Nothing about a rate
-    board needed its own version -- it only needed the windows to be sayable,
-    which is what that function was generalised to accept.
-    """
     from src.timeseries import compare_windows
 
     out: list[RateChange] = []
@@ -474,11 +371,6 @@ def rate_changes(history: list[RateSnapshot], banks: list[str], tenors: list[int
             ))
     return out
 
-
-# Two templates, filled from numbers computed above. Same reasoning as
-# `insight_line`: there is one fact to state, a template states it exactly,
-# and a model that never sees the numbers cannot get them wrong.
-
 def gap_sentence(gap: BankGap) -> str:
     if gap.gap < 0.005:
         return (f"{gap.higher} và {gap.lower} đang trả bằng nhau ở kỳ hạn "
@@ -497,15 +389,11 @@ def change_sentence(change: RateChange, previous_label: str) -> str:
     return (f"{change.bank} hiện {way} {_vn(abs(change.change))} điểm phần trăm "
             f"so với {previous_label} ở kỳ hạn {change.tenor} tháng.")
 
-
-# --- the trend chart ------------------------------------------------------
-
 MAX_TREND_BANKS = 3
 
 
 def trend_rows(history: list[RateSnapshot], banks: list[str],
                tenor: int = HEADLINE_TENOR, board: str = "counter") -> list[dict]:
-    """One row per capture date, one column per bank, ready for chart_engine."""
     rows = []
     for snapshot in history:
         board_rates = snapshot.by_tenor(tenor, board)
@@ -520,14 +408,6 @@ def trend_rows(history: list[RateSnapshot], banks: list[str],
 
 def render_snapshot(snapshot: RateSnapshot, banks: list[str], tenor: int, out_path,
                     board: str = "counter"):
-    """Bar chart of where the chosen banks stand right now, or None.
-
-    The companion to `render_trend`, and shown beside it rather than instead
-    of it. A bar chart answers "who pays most today" at a glance and says
-    nothing about direction; a line chart answers "which way is this going"
-    and makes the reader compare endpoints to rank anyone. Neither is the
-    other's summary, so a comparison between banks shows both.
-    """
     rates = snapshot.by_tenor(tenor, board)
     rows = [{"bank": bank, "rate_pct": rates[bank]} for bank in banks if bank in rates]
     if len(rows) < 2:
@@ -548,13 +428,6 @@ def render_snapshot(snapshot: RateSnapshot, banks: list[str], tenor: int, out_pa
 
 def render_trend(history: list[RateSnapshot], banks: list[str], out_path,
                  tenor: int = HEADLINE_TENOR, board: str = "counter"):
-    """Draw the rate trend for up to three banks, or return None.
-
-    None when there is nothing honest to draw. A single capture is one point,
-    and a chart through one point is a flat line that reads as "the rate did
-    not move" when it means "we have only looked once" -- so the dashboard
-    shows a short explanation in the chart's place instead.
-    """
     chosen = list(banks)[:MAX_TREND_BANKS]
     rows = trend_rows(history, chosen, tenor, board)
     if len(rows) < 2 or not chosen:
