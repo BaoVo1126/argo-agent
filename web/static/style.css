@@ -1,21 +1,3 @@
-/*
- * Argo, for the person asking the question rather than the person who built it.
- *
- * Palette and type follow the project style guide -- washi paper, sumi ink,
- * copper, one vermilion accent; Playfair for headings, Be Vietnam Pro for
- * running text, JetBrains Mono for figures -- read through a Japanese
- * landscape band at the top and left quiet below it.
- *
- * The restraint is the point. Every result on this page is a claim about real
- * money, so the page carries one bright colour, one illustration, and nothing
- * that competes with a number for attention. The copper and indigo are the
- * same hues the chart engine uses, so a colour means the same thing on the
- * page as it does inside the PNG.
- *
- * Committed to a single light look: the page frames charts rendered on paper,
- * and a dark mode would leave them floating on the wrong ground.
- */
-
 :root {
   --paper:     #FAF5EA;
   --paper-2:   #F4ECDC;
@@ -40,12 +22,6 @@
 
 * { box-sizing: border-box; }
 
-/* The browser's own rule for [hidden] is `display: none` at the lowest
-   possible weight, so any class that sets `display` beats it. `.field` and
-   `.range` both set `display: flex`, which meant a fieldset written as
-   `<fieldset class="field" hidden>` rendered in full -- the period controls
-   showed up under "Giữa ngân hàng", where there is no period to choose. The
-   attribute has to win, because every panel on this page is toggled with it. */
 [hidden] { display: none !important; }
 
 body {
@@ -61,8 +37,6 @@ body {
 }
 
 main { max-width: 900px; margin: 0 auto; padding: 0 22px 90px; }
-
-/* ----------------------------- masthead ----------------------------- */
 
 .masthead { position: relative; color: var(--paper); }
 
@@ -92,8 +66,6 @@ main { max-width: 900px; margin: 0 auto; padding: 0 22px 90px; }
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.55);
 }
 
-/* ------------------------------- cards ------------------------------ */
-
 .card {
   background: var(--paper);
   border: 1px solid var(--rule);
@@ -103,15 +75,9 @@ main { max-width: 900px; margin: 0 auto; padding: 0 22px 90px; }
   box-shadow: var(--shadow);
 }
 
-/* The card overlaps the landscape, but only just: at -40px it cut the last
-   line off the standfirst, which is the one sentence that says what this is. */
-
-
 .card h2 { font-family: var(--serif); font-size: 26px; margin: 0 0 4px; }
 .card h3 { font-family: var(--serif); font-size: 20px; margin: 0 0 6px; }
 
-/* Every label on this page is followed by one of these: what the thing above
-   it actually means, in a sentence, without jargon. */
 .explain {
   margin: 0 0 18px;
   color: var(--ink-soft);
@@ -121,8 +87,6 @@ main { max-width: 900px; margin: 0 auto; padding: 0 22px 90px; }
 
 .block__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
 .block__note { margin: 0; color: var(--ink-soft); font-family: var(--mono); font-size: 12.5px; }
-
-/* -------------------------------- form ------------------------------ */
 
 form { display: flex; flex-direction: column; gap: 20px; }
 
@@ -207,8 +171,6 @@ input:focus-visible {
 .btn:hover:not(:disabled) { background: #AC2418; transform: translateY(-1px); }
 .btn:disabled { opacity: 0.55; cursor: progress; transform: none; }
 
-/* ------------------------------ progress ---------------------------- */
-
 .progress { margin: 26px 0; }
 
 .progress__bar {
@@ -239,17 +201,6 @@ input:focus-visible {
   color: var(--ink-2);
 }
 
-/* -------------------------------- trace ----------------------------- */
-/*
- * The run, while it is running. Deliberately quiet: it sits under a spinner
- * and it is finished with the moment the result appears, so it gets one
- * monospace column and a coloured left edge per kind rather than icons,
- * badges and a card of its own. The colours are the page's existing three --
- * moss for something that worked, vermilion for something that did not,
- * copper for a decision -- so a reader who has seen a result already knows
- * what they mean.
- */
-
 .trace {
   margin: 12px 0 0;
   padding: 0;
@@ -269,8 +220,6 @@ input:focus-visible {
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink-2);
-  /* New lines arrive one at a time under a spinner; without this they read
-     as the list jumping rather than as something happening. */
   animation: trace-in 0.28s ease-out;
 }
 
@@ -299,10 +248,8 @@ input:focus-visible {
   color: var(--ink-2);
 }
 
-/* Once the run is over the spinner is a lie, but the trace under it is not. */
 .progress--done .progress__bar { display: none; }
 
-/* A phase is the heading of everything indented under it. */
 .trace li.is-phase { color: var(--ink); font-weight: 500; margin-top: 6px; }
 .trace li.is-probe { border-left-color: var(--indigo); }
 .trace li.is-hit   { border-left-color: var(--moss); }
@@ -323,8 +270,6 @@ input:focus-visible {
   max-width: 72ch;
 }
 
-/* ------------------------------- notice ----------------------------- */
-
 .notice {
   margin: 26px 0;
   padding: 24px 26px;
@@ -337,8 +282,6 @@ input:focus-visible {
 .notice h2 { font-family: var(--serif); font-size: 21px; margin: 0 0 6px; color: #8E2318; }
 .notice p { margin: 0; }
 .notice__foot { margin-top: 12px; color: var(--ink-soft); font-size: 13.5px; }
-
-/* ------------------------------ sources ----------------------------- */
 
 .sources { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 
@@ -374,8 +317,6 @@ input:focus-visible {
 .badge--failed { background: #F6E4E1; color: #8E2318; border: 1px solid #E0BDB6; }
 .badge--score { background: #fff; color: var(--ink-2); border: 1px solid var(--rule); }
 
-/* ------------------------------- tiles ------------------------------ */
-
 .tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
@@ -398,8 +339,6 @@ input:focus-visible {
   color: var(--ink-soft);
 }
 
-/* The figure wears ink, never a series colour: a number has to stay readable
-   before it is decorative. */
 .tile__value {
   margin: 6px 0 3px;
   font-family: var(--mono);
@@ -412,8 +351,6 @@ input:focus-visible {
 
 .tile__note { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
 
-/* The unit rides below the figure at text size, so a long one like
-   "điểm phần trăm" cannot push the number itself onto three lines. */
 .tile__unit {
   display: block;
   margin-top: 1px;
@@ -424,8 +361,6 @@ input:focus-visible {
 }
 .tile__value.up { color: #2F6B3F; }
 .tile__value.down { color: #9A2B20; }
-
-/* ------------------------------ figure ------------------------------ */
 
 .figure { margin: 4px 0 0; }
 
@@ -457,8 +392,6 @@ input:focus-visible {
 .insight p { margin: 0; }
 #insight { font-size: 15.5px; line-height: 1.75; }
 
-/* ----------------------------- anomalies ---------------------------- */
-
 .anomalies { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 
 .anomaly {
@@ -477,8 +410,6 @@ input:focus-visible {
 .anomaly__move { font-family: var(--mono); font-size: 13.5px; }
 .anomaly__note { color: var(--ink-soft); font-size: 13px; }
 
-/* ------------------------------ footer ------------------------------ */
-
 .footer { margin-top: 40px; background: var(--night-2); color: #A7B8BE; }
 
 .footer p {
@@ -494,9 +425,6 @@ input:focus-visible {
 
   .range .field { width: 100%; }
 }
-
-
-/* ------------------------------- tabs ------------------------------- */
 
 .tabs {
   display: flex;
@@ -524,8 +452,6 @@ input:focus-visible {
 }
 
 .tab:hover { color: var(--ink); }
-
-/* ------------------------- form, extended --------------------------- */
 
 .group {
   border: 1px solid var(--rule);
@@ -587,8 +513,6 @@ select:focus-visible, textarea:focus-visible {
 
 .check input { accent-color: var(--moss); width: 15px; height: 15px; }
 
-/* ------------------------------ caveats ----------------------------- */
-
 .caveat {
   margin: 14px 0;
   padding: 13px 16px;
@@ -598,8 +522,6 @@ select:focus-visible, textarea:focus-visible {
   font-size: 14px;
   color: var(--ink-2);
 }
-
-/* ------------------------------ history ----------------------------- */
 
 .table-scroll { overflow-x: auto; }
 
@@ -620,9 +542,6 @@ select:focus-visible, textarea:focus-visible {
   border: 1px dashed var(--rule);
   border-radius: 4px;
 }
-
-
-/* =========================== dashboard ============================= */
 
 .masthead--slim .masthead__scene { height: clamp(150px, 14vw, 190px); }
 .masthead--slim .masthead__text { padding-top: clamp(20px, 3vw, 34px); }
@@ -646,8 +565,6 @@ select:focus-visible, textarea:focus-visible {
   font-size: 12.5px;
   color: var(--ink-soft);
 }
-
-/* --- KPI row: the answer to "how are things", and nothing else --- */
 
 .kpis {
   display: grid;
@@ -673,7 +590,6 @@ select:focus-visible, textarea:focus-visible {
   color: var(--ink-soft);
 }
 
-/* Big, and few. The figure is the point of the card. */
 .kpi__value {
   margin: 8px 0 4px;
   font-family: var(--mono);
@@ -687,8 +603,6 @@ select:focus-visible, textarea:focus-visible {
 .kpi__value.good { color: #2F6B3F; }
 .kpi__value.bad  { color: #9A2B20; }
 .kpi__note { margin: 0; font-size: 13px; color: var(--ink-soft); }
-
-/* --- bank picker ------------------------------------------------- */
 
 .bank-picker { display: flex; flex-wrap: wrap; gap: 6px; }
 
@@ -709,8 +623,6 @@ select:focus-visible, textarea:focus-visible {
   color: var(--ink);
   font-weight: 600;
 }
-
-/* --- rate table -------------------------------------------------- */
 
 .table-tools {
   display: flex;
@@ -735,8 +647,6 @@ select:focus-visible, textarea:focus-visible {
   color: var(--ink-soft);
 }
 
-/* The shared swatch is nudged down to sit beside a two-line source label;
-   in a single-line legend that nudge reads as a misaligned dot. */
 .legend .swatch { width: 14px; height: 14px; margin: 0; border-radius: 3px;
                   vertical-align: -2px; }
 .swatch--best { background: #CBE0D0; box-shadow: 0 0 0 1px #7FA88C; }
@@ -746,8 +656,6 @@ select:focus-visible, textarea:focus-visible {
 .table--rates th[scope="row"] { font-weight: 600; padding-right: 16px; white-space: nowrap; }
 .table--rates td { padding: 9px 10px; }
 
-/* Colour carries one meaning only: best or worst at this tenor. The legend
-   above the table names both, so the colour is never the sole signal. */
 .cell--best  { background: #CBE0D0; color: #24512F; font-weight: 600; }
 .cell--worst { background: #F1D6D1; color: #7E2418; }
 
@@ -774,13 +682,6 @@ select:focus-visible, textarea:focus-visible {
   letter-spacing: 0 !important;
 }
 
-/* --------------------------- the rate query form -------------------------- */
-/*
- * Selection, not typing. The controls are checkboxes and radios underneath --
- * a screen reader and a keyboard get the real thing -- and the chip look is
- * painted on the label, so nothing here trades semantics for appearance.
- */
-
 #rate-form fieldset {
   margin: 0 0 18px;
   padding: 0;
@@ -798,8 +699,6 @@ select:focus-visible, textarea:focus-visible {
 
 .chip-check { cursor: pointer; }
 
-/* Off-screen rather than display:none, which would take the control out of
-   the keyboard's reach along with the eye's. */
 .chip-check input {
   position: absolute;
   opacity: 0;
@@ -838,8 +737,6 @@ select:focus-visible, textarea:focus-visible {
   margin-top: 8px;
 }
 
-/* A rule that separates the answered question above from the standing
-   overview below, without pretending to be a second page. */
 .section-rule {
   margin: 38px 0 0;
   padding-top: 18px;
@@ -850,8 +747,6 @@ select:focus-visible, textarea:focus-visible {
   font-weight: 600;
 }
 
-/* ------------------------------ the answer -------------------------------- */
-
 .insight__list {
   margin: 4px 0 0;
   padding-left: 18px;
@@ -859,8 +754,6 @@ select:focus-visible, textarea:focus-visible {
 
 .insight__list li { margin-bottom: 3px; }
 
-/* The change sits under the rate rather than beside it: a reader scanning a
-   column for the biggest number should not have to step over a second one. */
 .delta {
   display: block;
   font-family: var(--mono);
@@ -874,7 +767,6 @@ select:focus-visible, textarea:focus-visible {
 .delta--down { color: var(--vermilion); }
 .delta--none { color: var(--rule); cursor: help; }
 
-/* A cell whose number is genuinely absent, as opposed to zero. */
 .table--rates td.muted { color: var(--ink-soft); cursor: help; }
 
 .chart-pair { margin-bottom: 26px; }
@@ -890,8 +782,6 @@ select:focus-visible, textarea:focus-visible {
   color: var(--ink-soft);
 }
 
-/* Side by side where there is room, stacked where there is not. The two
-   charts answer different questions, so seeing them together is the point. */
 @media (min-width: 760px) {
   .chart-pair {
     display: grid;
