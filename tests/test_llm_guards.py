@@ -1,14 +1,5 @@
-"""
-The two places a model could put something false in front of a customer.
-
-Neither test calls a model. Both test the guard that stands between the model
-and the page, because that guard is what makes the model safe to use at all.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
-
 from src.llm import insight, planner
 from src.timeseries import analyse
 
@@ -22,21 +13,16 @@ def _analysis():
     rows = [{"date": BASE + dt.timedelta(days=i), "rate": v} for i, v in enumerate(values)]
     return analyse(rows, value_field="rate", unit="VND/USD")
 
-
-# --- planner: a plan can never contain something fetchable ---------------
-
 def test_a_registry_key_the_catalogue_does_not_have_becomes_none():
-    """The whole anti-hallucination story in one assertion: a model may name
-    any source it likes and none of them run."""
     assert planner._fallback("cái gì đó lạ", CATALOGUE).registry_key is None
 
 
 def test_domain_hints_are_stripped_to_bare_hostnames():
     cleaned = planner._clean_domains([
-        "https://sbv.gov.vn/tygia/lich-su?x=1",   # a URL, not a hint
+        "https://sbv.gov.vn/tygia/lich-su?x=1",  
         "www.vietcombank.com.vn",
         "không phải tên miền",
-        "sbv.gov.vn",                             # duplicate of the first
+        "sbv.gov.vn",                           
     ])
     assert cleaned == ["sbv.gov.vn", "vietcombank.com.vn"]
     assert all("/" not in d and not d.startswith("http") for d in cleaned)
@@ -53,9 +39,6 @@ def test_the_fallback_plan_works_with_no_model_at_all():
     assert plan.from_model is False
     assert plan.search_queries == ["tỷ giá USD/VND"]
     assert plan.domain_hints == []
-
-
-# --- insight: every number in the sentence was supplied ------------------
 
 def test_a_number_that_was_never_supplied_is_caught():
     allowed = insight.allowed_values(_analysis())
@@ -85,32 +68,18 @@ def test_the_template_is_always_available_and_quotes_only_real_numbers():
 
 
 def test_no_usable_model_still_produces_a_correct_paragraph():
-    """The model is the optional layer. Naming one that is not installed has
-    to degrade to the template, not to an exception on the customer's page."""
     analysis = _analysis()
     result = insight.write(analysis, "Tỷ giá USD/VND", model="khong-co-model-nay:0b")
     assert result.origin == "template"
     assert insight.check_numbers(result.text, insight.allowed_values(analysis)) == []
 
-
-# --- the direction guard: a right number sent the wrong way ---------------
-
 def _rate_analysis():
-    """A rate series that rises hard and comes back down in two smaller steps.
-
-    The rise and the falls have to differ in size. A symmetric spike gives a
-    +20 and a -20, and "giảm 20" is then a true statement about the second
-    move -- which the guard correctly allows, and which would make this test
-    assert the opposite of what it means to."""
     values = [3.0] * 8 + [23.0, 13.0] + [3.0] * 10
     rows = [{"date": dt.date(2005 + i, 1, 1), "rate": v} for i, v in enumerate(values)]
     return analyse(rows, value_field="rate", unit="%")
 
 
 def test_a_rise_reported_as_a_fall_is_caught():
-    """The failure this guard was written for: asked about a year when the
-    rate rose, a model wrote "mức giảm" in front of the right figure. Every
-    number checked out, and the claim was backwards."""
     analysis = _rate_analysis()
     rise = next(a for a in analysis.anomalies if a.direction == "tăng")
     wrong = f"Chỉ số giảm {abs(rise.change):.2f} điểm phần trăm trong kỳ đó."
@@ -129,8 +98,6 @@ def test_the_overall_trend_direction_is_checked_too():
 
 
 def test_a_figure_with_no_direction_attached_is_left_alone():
-    """Minimums and maximums do not move, so a sentence quoting one is the
-    number guard's business, not this one's."""
     analysis = _rate_analysis()
     assert insight.check_directions(
         f"Mức cao nhất trong kỳ là {analysis.maximum:.2f}%.", analysis) == []
