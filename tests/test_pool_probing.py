@@ -1,23 +1,9 @@
-"""
-The bounded fallback: a vetted pool, probed live, and nothing outside it.
-
-The point of removing the search engine was that the set of sites this project
-can fetch became finite and readable. A test suite that only checked the happy
-path would let that guarantee rot quietly -- a typo in one search template is
-enough to send the probe to a host nobody vetted, and it would look like a
-working feature. So the first thing checked here is containment, and the
-behaviour tests come after it.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
 import pathlib
 import unicodedata
 from urllib.parse import urlparse
-
 import pytest
-
 from modes.research import discovery, pool
 from modes.research.registry import CATEGORIES, match_category, match_keywords
 from modes.research.trace import Trace
@@ -26,7 +12,6 @@ from src.scoring.domains import TIER_POINTS, Tier, classify
 from src.scoring.health import SUSPEND_AFTER_FAILURES, HealthRecord
 
 def _fold(text: str) -> str:
-    """Compare Vietnamese without depending on how it was typed."""
     stripped = unicodedata.normalize("NFD", text.lower())
     return "".join(c for c in stripped
                    if unicodedata.category(c) != "Mn").replace("đ", "d")
@@ -36,8 +21,6 @@ START = dt.date(2026, 1, 1)
 END = dt.date(2026, 12, 31)
 
 
-# --- containment ----------------------------------------------------------
-
 def test_every_category_has_a_pool_of_the_agreed_size():
     for category in CATEGORIES:
         entries = pool.for_category(category)
@@ -45,7 +28,6 @@ def test_every_category_has_a_pool_of_the_agreed_size():
 
 
 def test_an_unknown_category_opens_no_pool_at_all():
-    """The refusal path depends on this being empty rather than a default."""
     assert pool.for_category("bong_da") == ()
     assert pool.for_category("") == ()
 
@@ -58,10 +40,6 @@ def test_domains_are_unique_within_a_pool():
 
 @pytest.mark.parametrize("category", CATEGORIES)
 def test_no_address_in_a_pool_leaves_its_own_domain(category):
-    """A search template is a URL written by hand, and a hand-written URL can
-    point at the wrong host. That mistake would not fail -- it would quietly
-    widen the set of sites Argo fetches, which is the one thing this design
-    exists to prevent."""
     for entry in pool.for_category(category):
         for url in entry.urls("lam phat viet nam"):
             host = (urlparse(url).hostname or "").removeprefix("www.")
@@ -82,8 +60,6 @@ def test_the_search_template_is_only_used_when_there_is_a_query():
     assert entry.urls("lạm phát")[-1] == "https://gso.gov.vn/?s=l%E1%BA%A1m+ph%C3%A1t"
 
 
-# --- which pool a topic is allowed to open --------------------------------
-
 @pytest.mark.parametrize("topic,expected", [
     ("giá vàng SJC hôm nay", "market_price"),
     ("giá xăng RON95", "market_price"),
@@ -101,12 +77,7 @@ def test_a_topic_without_an_adapter_still_finds_its_category(topic, expected):
     "lịch chiếu phim cuối tuần",
 ])
 def test_a_topic_outside_every_category_is_not_placed_anywhere(topic):
-    """None is the answer that ends the run. Guessing a category here would
-    put an unrelated question in front of seventeen ministries."""
     assert match_category(topic) is None
-
-
-# --- suspension -----------------------------------------------------------
 
 def test_a_domain_rests_only_after_repeated_failures(tmp_path):
     record = HealthRecord(path=tmp_path / "health.json")
@@ -123,8 +94,6 @@ def test_a_domain_rests_only_after_repeated_failures(tmp_path):
 
 
 def test_a_suspension_is_never_a_removal(tmp_path):
-    """The pool is code and the suspension is data. A rested domain has to
-    still be in the list, or 'temporarily' would not mean anything."""
     record = HealthRecord(path=tmp_path / "health.json")
     for _ in range(SUSPEND_AFTER_FAILURES):
         record.record_failure("https://gso.gov.vn/", Tier.GOVERNMENT)
@@ -153,9 +122,6 @@ def test_suspension_survives_a_save_and_reload(tmp_path):
 
     assert HealthRecord.load(path).is_suspended("adb.org")
 
-
-# --- the probe itself -----------------------------------------------------
-
 def _table(rows: list[list[str]]) -> list[dict]:
     return [{"rows": rows}]
 
@@ -167,8 +133,6 @@ def _dated_rows(n: int = 8, value: float = 100.0) -> list[list[str]]:
 
 
 class FakePage:
-    """A browser that answers from a dictionary instead of the network."""
-
     def __init__(self, tables_by_url: dict[str, list[dict]],
                  broken: set[str] | None = None):
         self.tables_by_url = tables_by_url
@@ -205,7 +169,6 @@ def test_a_domain_that_publishes_a_table_becomes_a_source(tmp_path):
 
     assert [s.site for s in sources] == ["gso.gov.vn"]
     assert sources[0].url == hit
-    # The probe read the page; the source must not ask for it a second time.
     assert sources[0].plan == []
     assert len(sources[0].extract(None)) == 8
 
@@ -215,8 +178,6 @@ def test_a_domain_that_publishes_a_table_becomes_a_source(tmp_path):
 
 
 def test_a_source_that_could_never_pass_is_dropped_while_the_customer_watches(tmp_path):
-    """An aggregator tops out below the threshold even with full corroboration,
-    so there is nothing to learn by carrying it through the whole pipeline."""
     health = HealthRecord(path=tmp_path / "health.json")
     ceiling = TIER_POINTS[Tier.AGGREGATOR] + STRUCTURE_POINTS + CONSENSUS_POINTS_MAX
     assert ceiling < 60, "the point of this test is that an aggregator cannot reach 60"
@@ -237,7 +198,7 @@ def test_a_domain_that_answers_nothing_is_counted_against_and_then_rested(tmp_pa
     for _ in range(SUSPEND_AFTER_FAILURES - 1):
         health.record_failure("https://gso.gov.vn/", Tier.GOVERNMENT)
 
-    page = FakePage({})            # nothing anywhere
+    page = FakePage({})       
     _, trace = _probe(page, "macro_aggregate", health)
 
     assert health.is_suspended("gso.gov.vn")
@@ -259,8 +220,6 @@ def test_a_rested_domain_is_passed_over_without_a_page_load(tmp_path):
 
 
 def test_probing_stops_once_enough_sources_are_in_hand(tmp_path):
-    """Every domain in the pool answering is not a reason to fetch all of
-    them. The run needs corroboration, not a census."""
     health = HealthRecord(path=tmp_path / "health.json")
     everything = {entry.urls("lạm phát")[0]: _table(_dated_rows())
                   for entry in pool.for_category("macro_aggregate")}
@@ -273,7 +232,6 @@ def test_probing_stops_once_enough_sources_are_in_hand(tmp_path):
 def test_a_planner_hint_reorders_the_pool_and_nothing_more(tmp_path):
     ordered = discovery._ordered(pool.for_category("macro_aggregate"), ["imf.org"])
     assert ordered[0].domain == "imf.org"
-    # A hint nobody vetted moves nothing and adds nothing.
     unchanged = discovery._ordered(pool.for_category("macro_aggregate"),
                                    ["khong-ton-tai.example"])
     assert [d.domain for d in unchanged] == \
@@ -281,8 +239,6 @@ def test_a_planner_hint_reorders_the_pool_and_nothing_more(tmp_path):
 
 
 def test_a_page_with_no_dated_table_is_not_guessed_at(tmp_path):
-    """Reading a number out of prose is an interpretation the pipeline cannot
-    check, so a page without a real table has to count as nothing."""
     health = HealthRecord(path=tmp_path / "health.json")
     prose = _table([["Chỉ tiêu", "Nhận xét"]] * 8)
     hit = "https://gso.gov.vn/so-lieu-thong-ke/"
@@ -299,8 +255,6 @@ def test_a_navigation_failure_moves_on_to_the_next_address(tmp_path):
     sources, _ = _probe(page, "macro_aggregate", health)
     assert [s.url for s in sources] == [second]
 
-
-# --- the trace ------------------------------------------------------------
 
 def test_events_arrive_at_the_sink_as_they_are_made():
     seen = []
@@ -319,9 +273,6 @@ def test_a_broken_listener_cannot_end_a_run():
     trace = Trace(sink=explode)
     trace.event("phase", "Đang thu thập…")
     assert len(trace.events) == 1
-
-
-# --- the refusal, which is the whole point of a bounded agent --------------
 
 def _plan(topic: str):
     from src.llm.planner import ResearchPlan
@@ -352,10 +303,6 @@ def test_an_unknown_category_probes_nothing(tmp_path):
 
 
 def test_the_open_web_search_is_gone_for_good():
-    """A regression guard with teeth: this project's guarantee is that the set
-    of sites it fetches is the pool plus the adapters. A helper that queries a
-    search engine reopens that set, and it would arrive looking like a useful
-    fallback rather than a hole."""
     source = pathlib.Path(discovery.__file__).read_text(encoding="utf-8")
     for engine in ("duckduckgo", "google.com/search", "bing.com/search"):
         assert engine not in source.lower(), f"{engine} is back in discovery.py"
@@ -363,10 +310,6 @@ def test_the_open_web_search_is_gone_for_good():
 
 
 def test_a_site_that_never_answered_is_not_reported_as_having_no_table(tmp_path):
-    """Two failures that look identical in a count and mean opposite things.
-    An outage is something the customer can wait out; a publisher who does not
-    put the number in an HTML table is not, and one sentence for both would
-    send half of them looking for the wrong problem."""
     health = HealthRecord(path=tmp_path / "health.json")
     entry = pool.for_category("macro_aggregate")[0]
 
@@ -375,7 +318,7 @@ def test_a_site_that_never_answered_is_not_reported_as_having_no_table(tmp_path)
     missed = next(e for e in trace.events if e.kind == "miss")
     assert "không truy cập được" in missed.text
 
-    silent = FakePage({})            # every address loads, none has a table
+    silent = FakePage({})            
     _, trace = _probe(silent, "macro_aggregate", HealthRecord(path=tmp_path / "b.json"))
     missed = next(e for e in trace.events if e.kind == "miss")
     assert "không có bảng số liệu" in missed.text
