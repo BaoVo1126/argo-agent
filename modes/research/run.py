@@ -1,20 +1,7 @@
-"""
-Run research mode from the terminal.
-
-    python -m modes.research.run "tỷ giá USD/VND" --from 2026-06-01 --to 2026-08-31
-    python -m modes.research.run "giá vàng SJC" --days 90 --model qwen2.5:7b
-
-The web UI calls the same `pipeline.run`, so what prints here and what a
-customer sees come from one place. The difference is only how much is shown:
-this prints the working, the UI prints the conclusion.
-"""
-
 from __future__ import annotations
-
 import argparse
 import datetime as dt
 import sys
-
 from modes.research import pipeline
 from modes.research.pipeline import ResearchRequest
 
@@ -44,7 +31,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    # Windows consoles default to cp1252, which cannot encode Vietnamese.
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8")
