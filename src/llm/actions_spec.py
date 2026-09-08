@@ -1,20 +1,5 @@
-"""
-The action space, described once, in plain data.
-
-Ollama wants OpenAI-style tool dicts, and `actions/registry.py` implements the
-same eight actions in Python. Writing them out twice would create two
-descriptions of one contract, and the second copy drifts the first time an
-argument changes -- silently, because the adapter keeps working on its own
-terms.
-
-So the specs live here as plain dicts and the adapter is generated from them.
-A new action is added in exactly one place, and `test_action_parity` checks
-that the specs, the generated tools and the implementations still agree.
-"""
-
 from __future__ import annotations
 
-# type: "string" | "integer" | "boolean"
 ACTION_SPECS: list[dict] = [
     {
         "name": "click",
@@ -100,7 +85,6 @@ Rules:
 
 
 def to_openai_tools() -> list[dict]:
-    """OpenAI-style function schemas, which Ollama's /api/chat accepts."""
     tools = []
     for spec in ACTION_SPECS:
         properties = {}
