@@ -1,25 +1,5 @@
-"""
-Perceive -> Reason -> Act -> Verify, with a budget.
-
-Verification here is deliberately shallow: after acting, the loop re-perceives
-and hands the model the new page plus the outcome of what it just did. The
-model does the judging. What the loop owns is the part a model cannot be
-trusted with -- knowing when to stop.
-
-Three stopping conditions, and each exists because of a distinct failure:
-
-  - `finish` was called. The normal end.
-  - The step budget ran out. A model that keeps making progress-shaped moves
-    without converging would otherwise run until the rate limit does.
-  - The same action repeated `max_repeats` times. Clicking a button that does
-    nothing is not a retry after the second attempt, it is a loop, and it is
-    the most common way an agent burns a quota.
-"""
-
 from __future__ import annotations
-
 from dataclasses import dataclass, field
-
 from src.actions.registry import ActionResult, execute
 from src.config import SETTINGS
 from src.llm.decision import Decision
@@ -34,8 +14,6 @@ class Step:
     ok: bool
     message: str
     url: str
-    # The selector the action resolved to, when it resolved one. Testing mode
-    # replays this; the loop itself never reads it.
     selector: str = ""
 
 
@@ -108,18 +86,11 @@ class BrowserAgent:
         return run
 
     def _settle(self) -> None:
-        """Let a click's navigation or re-render land before re-perceiving.
-
-        Without this the next snapshot can catch the old DOM, and the model
-        is asked to reason about a page that no longer exists. `networkidle`
-        is skipped on purpose -- these apps keep connections open and it
-        routinely times out on a page that is perfectly ready.
-        """
         try:
             self.page.wait_for_load_state("domcontentloaded", timeout=SETTINGS.action_timeout_ms)
             self.page.wait_for_timeout(250)
         except Exception:
-            pass  # a timeout here is not a failure; the next snapshot decides
+            pass 
 
 
 def _signature(args: dict) -> str:
