@@ -1,5 +1,3 @@
-"""Trend, period comparison and anomaly detection, in plain Python."""
-
 from src.timeseries.analysis import (
     CALENDAR_PRESETS,
     PRESET_LABELS,
