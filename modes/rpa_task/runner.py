@@ -1,40 +1,11 @@
-"""
-RPA task mode -- FRAMEWORK ONLY, not yet exercised end to end.
-
-An RPA task is an agent run plus a verdict: the agent says it filed the form,
-and something that is not the agent decides whether the form was filed. That
-separation is the whole point. An agent asked to grade itself grades its own
-narration, and the failure mode is a confident "done" over an unchanged page.
-
-The checks here read the live page after the run, which is the same principle
-`evaluation/checkers/` already applies to the eval suite -- the difference is
-only that a task ships its checks with it instead of naming a Python module.
-
-Usage once the TODOs are closed:
-
-    spec = TaskSpec(
-        name="daily_login",
-        goal="log in as standard_user",
-        start_url="https://www.saucedemo.com/",
-        checks=[Check.url_contains("inventory.html"),
-                Check.text_contains("Products")],
-    )
-    outcome = run_task(page, spec)
-    print(outcome.verdict())
-"""
-
 from __future__ import annotations
-
 from dataclasses import dataclass, field
-
 from src.agent.loop import BrowserAgent, RunResult
 
 
 @dataclass
 class Check:
-    """One assertion about the page the run left behind."""
-
-    kind: str            # "url_contains" | "text_contains" | "selector_visible"
+    kind: str      
     expected: str
     label: str = ""
 
@@ -90,9 +61,6 @@ class TaskOutcome:
 
     @property
     def passed(self) -> bool:
-        # An empty check list is not a pass. A task nobody wrote a check for
-        # has not been verified, and reporting it green is the exact failure
-        # this mode exists to prevent.
         return bool(self.checks) and all(c.passed for c in self.checks)
 
     def verdict(self) -> str:
@@ -112,7 +80,6 @@ class TaskOutcome:
 
 
 def run_task(page, spec: TaskSpec, planner=None, verbose: bool = False) -> TaskOutcome:
-    """Drive the goal with the shared agent loop, then check the page."""
     outcome = TaskOutcome(task=spec.name, run=None)
     try:
         page.goto(spec.start_url, wait_until="domcontentloaded")
@@ -122,29 +89,7 @@ def run_task(page, spec: TaskSpec, planner=None, verbose: bool = False) -> TaskO
         outcome.error = f"{type(exc).__name__}: {exc}"
         return outcome
 
-    # The checks run whether or not the agent claimed success: an agent that
-    # gives up having already done the work should still pass, and one that
-    # claims success having done nothing should still fail.
     for check in spec.checks:
         passed, observed = check.evaluate(page)
         outcome.checks.append(CheckResult(check.label or check.kind, passed, observed))
     return outcome
-
-
-# --- What is missing, and why it is not guessed at -------------------------
-#
-# TODO(recovery): a real RPA job that fails at step 9 of 12 should retry that
-# step, not the whole task. That needs a checkpoint notion the agent loop does
-# not have -- and inventing one before a task exists that needs it would fix
-# the design around a guess.
-#
-# TODO(scheduling): "run this every morning" is the usual reason to want RPA.
-# Out of scope here; the runner is meant to be callable from cron or a CI job
-# rather than to grow a scheduler of its own.
-#
-# TODO(secrets): credentials currently arrive inside `goal` as plain text,
-# which puts them in the prompt and in every log line. They belong in the
-# environment, referenced by name, and injected by the `type` action.
-#
-# TODO(task files): TaskSpec should load from YAML, the way
-# evaluation/tasks/*.yaml already does, so tasks are data rather than code.
