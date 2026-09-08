@@ -1,5 +1,3 @@
-"""Research & viz: bank-rate comparison, plus dated macro and market series."""
-
 from modes.research.registry import CATALOGUE, TopicEntry, planner_catalogue
 from modes.research.schema import Field, Schema, ValidationReport, validate
 from modes.research.sources import Source
