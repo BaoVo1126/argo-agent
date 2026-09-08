@@ -1,37 +1,14 @@
-/*
- * Three tabs: the rate dashboard, the macro series form, and what has run.
- *
- * Nothing technical reaches this file, because nothing technical is sent to
- * it. There is no log to display and no place to display one.
- *
- * The one thing that does arrive while a run is in flight is the trace: the
- * domains being tried, what each answered, what it scored, whether it was
- * kept. That is not a log -- it is the working behind a verdict the page is
- * about to deliver, written as sentences, and a customer told "we checked the
- * sources" without it is being asked to take that on trust.
- *
- * It comes over EventSource so the lines land when they happen rather than on
- * the poll's one-second grid. The poll carries the same events as a fallback,
- * which is why every event has an index: whichever channel delivers it, the
- * page renders each line exactly once.
- */
-
 const $ = (id) => document.getElementById(id);
-
 const POLL_MS = 1000;
 const NUMBER = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
-// Rates are quoted to two places even when the second is a zero: "6,2%"
-// beside "5,77%" reads as a different precision rather than the same one.
 const RATE = new Intl.NumberFormat("vi-VN",
   { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 let timer = null;
 let refreshTimer = null;
-let dash = null;          // the dashboard payload currently on screen
-let stream = null;        // EventSource for the running job's trace
-let traceSeen = 0;        // how many trace events have been drawn
-
-/* ---------------------------------------------------------------- tabs --- */
+let dash = null;       
+let stream = null;     
+let traceSeen = 0;        
 
 const PANELS = { rates: "panel-rates", macro: "panel-macro", updates: "panel-updates" };
 
@@ -47,15 +24,11 @@ for (const key of Object.keys(PANELS)) {
   $("tab-" + key).addEventListener("click", () => showTab(key));
 }
 
-/* ------------------------------------------------------------ dashboard --- */
-
 function fmtRate(value) {
   return value === null || value === undefined ? "—" : RATE.format(value) + "%";
 }
 
 function fmtWhen(iso) {
-  // Trim first, then substitute: replacing "T" lengthens the string, and
-  // slicing afterwards cut "14:53" down to "1".
   return iso ? iso.slice(0, 16).replace("T", " lúc ") : "";
 }
 
@@ -93,8 +66,6 @@ async function loadDashboard(banks) {
 
 function renderKpis(data) {
   const k = data.kpis;
-  // Three, and only three. A fourth number at the top of a dashboard competes
-  // with the answer rather than adding to it.
   const cards = [
     {
       label: `Cao nhất kỳ hạn ${data.tenor} tháng`,
@@ -126,7 +97,7 @@ function renderKpis(data) {
 }
 
 function renderCrosscheck(check) {
-  if (!check || !check.checked || check.agrees) return;   // silence when as expected
+  if (!check || !check.checked || check.agrees) return; 
   $("dash-notice").innerHTML =
     `<p class="caveat caveat--warn">Số liệu tổng hợp đang lệch so với công bố của
      BIDV ở kỳ hạn ${escapeHtml(check.mismatched.join(", "))} tháng. Bạn nên kiểm
@@ -146,7 +117,6 @@ function renderPicker(data) {
       const chosen = new Set(dash.banks_selected);
       const bank = pill.dataset.bank;
       if (chosen.has(bank)) chosen.delete(bank);
-      // Three is the number of line colours that stay apart from one another.
       else if (chosen.size < 3) chosen.add(bank);
       else return;
       loadDashboard([...chosen]);
@@ -166,8 +136,6 @@ function renderTrend(data) {
   } else {
     $("trend-figure").hidden = true;
     $("trend-empty").hidden = false;
-    // Not an error, and not hidden either: a single capture is one point, and
-    // a line through one point would read as "the rate held steady".
     $("trend-empty").textContent = data.updates < 2
       ? "Chưa vẽ được đường xu hướng: mới có một lần cập nhật. Không nguồn nào " +
         "công bố lãi suất của quá khứ, nên biểu đồ được dựng dần từ các lần cập " +
@@ -200,9 +168,6 @@ function renderTable(data) {
   const body = rows.map((row) => {
     const cells = data.tenors.map((t) => {
       const value = row.rates[String(t)];
-      // Colour marks a state -- best or worst at this tenor, across banks --
-      // and nothing else. Comparing down a column is the question a rate
-      // comparison exists to answer.
       let tone = "";
       if (value !== null && value !== undefined) {
         if (data.highest[String(t)] === row.bank) tone = " cell--best";
@@ -221,8 +186,6 @@ function renderTable(data) {
       " — các ngân hàng này không công bố bảng lãi suất ở dạng đọc được tự động."
     : "";
 }
-
-/* --------------------------------------------------------------- refresh --- */
 
 $("refresh").addEventListener("click", async () => {
   const button = $("refresh");
@@ -266,8 +229,6 @@ function endRefresh(message) {
   else $("refresh-phase").hidden = true;
 }
 
-/* --------------------------------------------------------------- updates --- */
-
 async function loadUpdates() {
   try {
     const data = await (await fetch("/api/updates")).json();
@@ -284,7 +245,7 @@ async function loadUpdates() {
               row.agrees ? "Khớp với BIDV" : "Lệch với BIDV"}</span>`
           : '<span class="badge badge--unused">Chưa đối chiếu</span>'}</td>
       </tr>`).join("");
-  } catch (error) { /* leave the previous listing in place */ }
+  } catch (error) {  }
 
   try {
     const data = await (await fetch("/api/history")).json();
@@ -302,10 +263,9 @@ async function loadUpdates() {
           <span class="sub">${escapeHtml(run.summary || "")}</span></td>
       </tr>`;
     }).join("");
-  } catch (error) { /* same */ }
+  } catch (error) {  }
 }
 
-/* ----------------------------------------------------------- macro form --- */
 
 function iso(date) { return date.toISOString().slice(0, 10); }
 
@@ -323,10 +283,6 @@ document.querySelectorAll(".chip").forEach((chip) =>
 setRange(1825);
 $("end").max = iso(new Date());
 
-/* --------------------------------------------------------------- trace --- */
-
-// Older lines stop being interesting once a run is deep into a pool, and an
-// unbounded list is a page that gets slower the longer the customer waits.
 const TRACE_MAX_ROWS = 200;
 
 function resetTrace() {
@@ -336,9 +292,6 @@ function resetTrace() {
 
 function drawTrace(events) {
   const list = $("trace");
-  // Only follow the newest line while the reader is already at the bottom.
-  // Yanking the list back down under someone who scrolled up to read a
-  // rejected source is the worst moment to do it.
   const following = list.scrollHeight - list.scrollTop - list.clientHeight < 40;
   let drawn = 0;
 
@@ -369,13 +322,11 @@ function formatSeconds(seconds) {
 
 function openStream(id) {
   closeStream();
-  if (!window.EventSource) return;      // the poll still carries the events
+  if (!window.EventSource) return;     
   stream = new EventSource(`/api/run/${id}/events`);
   stream.onmessage = (message) => {
     try { drawTrace([JSON.parse(message.data)]); } catch (error) { /* ignore */ }
   };
-  // The server closes the stream when the run ends; without this the browser
-  // would reconnect to a finished job every few seconds.
   stream.addEventListener("end", closeStream);
 }
 
@@ -430,8 +381,6 @@ async function poll(id) {
   } catch (error) { return; }
 
   $("phase").textContent = job.phase || "Đang xử lý…";
-  // Drawn by index, so this is a no-op whenever the stream is keeping up and
-  // the whole trace whenever it never connected.
   drawTrace(job.events);
   if (job.status === "running") return;
 
@@ -443,10 +392,7 @@ async function poll(id) {
 function stopRun() {
   clearInterval(timer);
   closeStream();
-  // The trace stays. It is the working behind the verdict directly below it,
-  // and a refusal is exactly the case where a customer wants to read back
-  // which sources were tried before being told there is no chart -- hiding it
-  // the moment the run ends would take that away at the moment it matters.
+
   $("progress").classList.add("progress--done");
   $("progress").hidden = $("trace").childElementCount === 0;
   $("phase").textContent = `Đã xong · ${$("trace").childElementCount} bước`;
@@ -586,20 +532,6 @@ function escapeHtml(value) {
 
 loadDashboard();
 
-/* ------------------------------------------------- structured rate query --- */
-/*
- * The rate question is selected, not typed. Four things vary -- which banks,
- * which tenors, compared how, over which two periods -- and every one of them
- * is a thing a person can point at, so there is nothing here for a planner to
- * interpret and nothing for a model to get wrong. The options themselves come
- * from the server rather than being written into this file: a chip for a bank
- * the board has never carried is a choice that can only end in an empty table.
- */
-
-// What the second dropdown says once the first one has been chosen. The
-// comparison period is not a free choice for a preset -- "tháng này" is
-// compared with "tháng trước" and nothing else -- so it is shown, locked,
-// rather than left as a control that appears to do something it does not.
 const PREVIOUS_LABELS = {
   week: "Tuần trước", month: "Tháng trước", year: "Năm ngoái",
   custom: "Khoảng tự chọn",
@@ -625,8 +557,6 @@ async function loadRateOptions() {
     return;
   }
 
-  // The big four first, then the rest: it is the grouping a saver already has
-  // in their head, and the dashboard's table marks it too.
   const big4 = rateOptions.big_four || [];
   const banks = [...rateOptions.banks].sort(
     (a, b) => (big4.includes(b) ? 1 : 0) - (big4.includes(a) ? 1 : 0));
@@ -661,8 +591,6 @@ function currentMode() {
 }
 
 function syncPeriodControls() {
-  // The period block only means something when a period is being compared, so
-  // for "giữa ngân hàng" it is absent rather than present and ignored.
   $("period-fields").hidden = currentMode() === "banks";
 
   const preset = $("preset-current").value;
@@ -676,8 +604,6 @@ function syncPeriodControls() {
 }
 
 function seedCustomRange() {
-  // Two adjacent weeks ending today: a starting point that is already a valid
-  // comparison, so the picker opens on something rather than on four blanks.
   const day = 86400000;
   const today = new Date();
   $("cur-end").value = iso(today);
@@ -768,11 +694,6 @@ function renderRateTable(data) {
       if (cell.rate === null || cell.rate === undefined) {
         return `<td class="muted" title="${escapeHtml(cell.note || "")}">—</td>`;
       }
-      // Same two classes the overview table uses, picked the same way: colour
-      // has to mean the same thing in both places or it stops being
-      // information. One or neither, never both -- concatenating them produced
-      // "cell--bestcell--worst", which matches no rule and silently dropped
-      // the highlight from every cell where a tenor was tied.
       let tone = "";
       if (data.highest[String(tenor)] === row.bank) tone = "cell--best";
       else if (data.lowest[String(tenor)] === row.bank) tone = "cell--worst";
@@ -788,9 +709,6 @@ function renderRateTable(data) {
 
 function deltaMarkup(cell) {
   if (cell.change === null || cell.change === undefined) {
-    // The number is missing because nobody looked during that period, which is
-    // a fact about the record rather than about the rate. The cell says so on
-    // hover instead of a zero that would read as "it did not move".
     return `<span class="delta delta--none" title="${
       escapeHtml(cell.note || "")}">·</span>`;
   }
@@ -801,9 +719,6 @@ function deltaMarkup(cell) {
 }
 
 function renderRateCharts(data) {
-  // One block per tenor, each holding the two charts that answer different
-  // questions: the bar says who pays most today, the line says which way each
-  // bank is moving. Neither is the other's summary.
   const blocks = [];
   for (const tenor of data.tenors) {
     const snapshot = data.charts.snapshot[String(tenor)];
