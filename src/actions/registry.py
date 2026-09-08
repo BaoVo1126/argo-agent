@@ -1,21 +1,5 @@
-"""
-The action space, and the only place Playwright is driven.
-
-Every action returns an ActionResult instead of raising. The agent loop feeds
-failures back to the model as the next observation, so "element 4 is not
-visible" has to arrive as text the model can read and correct from -- an
-exception would end the run instead of teaching it.
-
-Actions that resolve an element also return its selector in `data`. The agent
-loop ignores it, but testing mode cannot serialise a trace without it: the
-`[4]` the model chose is an index into a snapshot that no longer exists, and a
-replayable script needs the selector that index stood for.
-"""
-
 from __future__ import annotations
-
 from dataclasses import dataclass, field
-
 from src.config import SETTINGS
 from src.perception.dom import Snapshot
 
@@ -25,13 +9,11 @@ class ActionResult:
     ok: bool
     message: str
     data: dict = field(default_factory=dict)
-    # Set by finish(); the loop stops on it.
     finished: bool = False
     success: bool = False
 
 
 def _resolve(snapshot: Snapshot, element_id, kind: str):
-    """Look an id up in the snapshot the model was actually shown."""
     try:
         element_id = int(element_id)
     except (TypeError, ValueError):
@@ -65,8 +47,6 @@ def type(page, snapshot: Snapshot, id: int, text: str) -> ActionResult:
     if error:
         return error
     try:
-        # fill() replaces rather than appends, which is what a retry needs:
-        # typing twice into a field must not produce "abcabc".
         page.fill(element.selector, str(text), timeout=SETTINGS.action_timeout_ms)
     except Exception as exc:
         return ActionResult(False, f"type failed on {element.selector}: {_brief(exc)}")
@@ -103,12 +83,6 @@ def scroll(page, snapshot: Snapshot, direction: str) -> ActionResult:
 
 
 def _timeout(page) -> int:
-    """This page's own allowance if a caller set one, else the global default.
-
-    `modes/research/collector.py` raises the limit for sites that are simply
-    far away; passing SETTINGS.action_timeout_ms unconditionally would override
-    that and time the run out at eight seconds regardless.
-    """
     return getattr(page, "_argo_timeout_ms", None) or SETTINGS.action_timeout_ms
 
 
@@ -129,12 +103,6 @@ def wait_for(page, snapshot: Snapshot, selector: str) -> ActionResult:
 
 
 def extract(page, snapshot: Snapshot, selector: str) -> ActionResult:
-    """Read text out of the page, for tasks whose answer is on screen.
-
-    Returns every match, not the first: "the cheapest product" is answered by
-    reading a list, and silently taking element zero would look like a correct
-    answer on a page that happens to be sorted the right way.
-    """
     try:
         nodes = page.query_selector_all(selector)
     except Exception as exc:
@@ -177,8 +145,6 @@ def execute(page, snapshot: Snapshot, name: str, args: dict) -> ActionResult:
     try:
         return handler(page, snapshot, **args)
     except TypeError as exc:
-        # Wrong or missing arguments from the model: report the signature
-        # rather than crashing, so the next step can correct it.
         return ActionResult(False, f"{name}: bad arguments {args} -- {exc}")
 
 
