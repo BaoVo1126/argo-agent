@@ -1,31 +1,3 @@
-"""
-Free-text topic in, a research plan out. The plan contains no URLs.
-
-That last sentence is the whole design. Asked "which sites publish the USD/VND
-rate", a model answers with confident, well-formed, frequently non-existent
-URLs -- and a scraper handed an invented URL produces an empty result that
-looks like a site being down rather than a model making something up. So the
-planner is never allowed to name a source.
-
-What it is allowed to do is the part models are good at: read a sentence a
-person typed and say what kind of quantity it is about, what to call it, what
-unit it is in, how often it is published, and what one would type into a
-search box to find it. Everything it returns is then either checked against a
-fixed catalogue (`registry_key`), typed into a vetted site's own search box
-(`search_queries`), or used only to *reorder* the vetted domain pool for the
-topic's category (`domain_hints`). A hallucinated domain hint reorders nothing
-and disappears; a hallucinated URL would have been fetched.
-
-The list the hints reorder is `modes/research/pool.py`, not a search engine's
-results. That swap tightened the guarantee rather than loosening it: a hint
-used to be able to promote any site the engine happened to return, and now it
-can only promote a site somebody already vetted.
-
-The planner is also optional. With no model reachable, `plan()` falls back to
-keyword-matching the catalogue and searching for the topic as typed, which is
-worse at naming things and just as safe.
-"""
-
 from __future__ import annotations
 
 import re
@@ -80,7 +52,6 @@ class ResearchPlan:
     search_queries: list[str] = field(default_factory=list)
     domain_hints: list[str] = field(default_factory=list)
     notes: str = ""
-    # False when no model answered and the plan came from keyword matching.
     from_model: bool = True
 
     @property
@@ -89,7 +60,6 @@ class ResearchPlan:
 
 
 def _slug(text: str, fallback: str = "value") -> str:
-    """A snake_case ASCII field name, from anything a model returns."""
     stripped = unicodedata.normalize("NFD", str(text or ""))
     stripped = "".join(c for c in stripped if unicodedata.category(c) != "Mn")
     stripped = stripped.replace("đ", "d").replace("Đ", "D")
@@ -101,12 +71,6 @@ _BARE_DOMAIN = re.compile(r"^[a-z0-9][a-z0-9.-]{2,80}\.[a-z]{2,12}$")
 
 
 def _clean_domains(values) -> list[str]:
-    """Keep bare hostnames, drop anything shaped like a fetchable address.
-
-    A hint is only ever used to rank search results, so a stray path would be
-    silently ignored anyway -- but dropping it here keeps the invariant
-    checkable: nothing in a plan can be fetched.
-    """
     out = []
     for value in values or []:
         text = str(value).strip().lower()
@@ -126,7 +90,6 @@ def _clean_queries(values, topic: str) -> list[str]:
 
 
 def _fallback(topic: str, catalogue: dict[str, str]) -> ResearchPlan:
-    """No model: match the catalogue on words, and search for what was typed."""
     lowered = _slug(topic).replace("_", " ")
     best, best_hits = None, 0
     for key, description in catalogue.items():
@@ -151,7 +114,6 @@ def _fallback(topic: str, catalogue: dict[str, str]) -> ResearchPlan:
 
 def plan(topic: str, start, end, catalogue: dict[str, str],
          model: str | None = None) -> ResearchPlan:
-    """Turn a typed sentence into a plan. Never raises: falls back instead."""
     listing = "\n".join(f"- {key}: {desc}" for key, desc in catalogue.items()) or "- (trống)"
     prompt = _TEMPLATE.format(topic=topic.strip(), start=start, end=end, catalogue=listing)
 
@@ -163,8 +125,6 @@ def plan(topic: str, start, end, catalogue: dict[str, str],
     key = raw.get("registry_key")
     if isinstance(key, str):
         key = key.strip()
-    # The only defence that matters: a key the catalogue does not contain is
-    # not a source, whatever the model called it.
     registry_key = key if key in catalogue else None
 
     frequency = str(raw.get("frequency") or "daily").strip().lower()
