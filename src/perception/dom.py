@@ -1,33 +1,6 @@
-"""
-Turn a live page into a short list of things the model can act on.
-
-The model never sees HTML. It sees lines like
-
-    [4] button "Add to cart"  (#add-to-cart-sauce-labs-backpack)
-
-which is enough to choose an action and short enough that a page of sixty
-controls still leaves room for the goal and the history.
-
-Two decisions worth stating:
-
-**Ids are per-snapshot, not per-element.** They are indices into the list the
-model was just shown, so `click(4)` means "the fourth thing in the list you
-were given". Re-perceiving after every action is what keeps that honest: a
-stale id from a previous page cannot silently resolve to something else,
-because the map is rebuilt.
-
-**Each element carries a selector, resolved at snapshot time.** Acting through
-a stored selector rather than an element handle survives the small re-renders
-these single-page apps do constantly, and it makes a failure legible: the
-error names the selector that stopped matching.
-"""
-
 from __future__ import annotations
-
 from dataclasses import dataclass
 
-# One JS pass collects everything: a round trip per element is the difference
-# between a 40 ms snapshot and a 4 s one on a page with sixty controls.
 _COLLECT = """
 () => {
   const out = [];
@@ -142,8 +115,6 @@ class Snapshot:
     url: str
     title: str
     elements: list[Element]
-    # Page text is the only way the model can tell "logged in" from "error
-    # message shown" -- both pages expose the same controls.
     text: str
 
     def render(self, max_elements: int) -> str:
