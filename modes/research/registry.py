@@ -1,49 +1,13 @@
-"""
-The catalogue of dated-series topics Argo knows how to gather.
-
-This is the secondary flow. The product is the savings-rate comparison in
-`bank_rates.py`, which is a bank-by-tenor board rather than one dated series
-and has its own pipeline. What stays here are the macro and market series that
-share a shape: one number per date, from sources that are all trying to
-measure the same thing.
-
-That shared shape is why `src/scoring` works on these and not on rates. Two
-bodies publishing Vietnam's inflation are two readings of one truth, so their
-agreement is evidence. Two banks publishing their own deposit rates are two
-different decisions, and their disagreement is the whole point.
-
-`category` records which kind a topic is, so a caller never has to infer it
-from the topic's name.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
 from dataclasses import dataclass
 from typing import Callable
-
 from modes.research.sources import Source, imf_source, open_fx_source, vcb_rate_source, worldbank_source
 
-# A daily source that fetches one request per day cannot be pointed at ten
-# years: that is 3,650 requests at a site that never asked for them. Windows
-# wider than this are clipped, and the customer is told.
 DAILY_MAX_SPAN_DAYS = 400
 
-# What kind of quantity a topic is about.
-#   market_price     -- a price set by a market, quoted continuously
-#   macro_aggregate  -- an estimate of an economy, published periodically
-# The savings-rate board is neither, and lives in `bank_rates.py`.
 CATEGORIES = ("market_price", "macro_aggregate")
 
-# What makes a typed topic belong to a category, when no catalogue entry
-# matched it. This is the gate on `modes/research/pool.py`: a topic that lands
-# in a category may be looked for among that category's vetted domains, and a
-# topic that lands nowhere ends the run with "chưa hỗ trợ lĩnh vực này".
-#
-# Deliberately a lookup rather than a model, for the same reason
-# `match_keywords` is. Asked to classify "lạm phát Việt Nam" a 3B model will
-# answer fluently and sometimes wrongly, and here a wrong answer does not
-# produce a bad chart -- it produces a scrape of the wrong seventeen sites.
 CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
     "market_price": (
         "gia vang", "gia vàng", "giá vàng", "vang mieng", "vàng miếng",
@@ -69,16 +33,14 @@ CATEGORY_KEYWORDS: dict[str, tuple[str, ...]] = {
 @dataclass(frozen=True)
 class TopicEntry:
     key: str
-    # Shown to the planner so it can match a typed sentence to this entry.
     description: str
     metric_label: str
     value_field: str
     unit: str
     build: Callable[[list[dt.date]], list[Source]]
     category: str = "market_price"
-    frequency: str = "daily"            # daily | yearly
+    frequency: str = "daily"       
     max_span_days: int | None = None
-    # Words that make this entry the obvious match without a model.
     keywords: tuple[str, ...] = ()
 
 
@@ -145,17 +107,10 @@ CATALOGUE: dict[str, TopicEntry] = {
 
 
 def planner_catalogue() -> dict[str, str]:
-    """Keys and descriptions, as the planner prompt needs them."""
     return {key: entry.description for key, entry in CATALOGUE.items()}
 
 
 def _best_match(topic: str, vocabularies: dict[str, tuple[str, ...]]) -> str | None:
-    """Whichever key's words the topic contains most of, or None for none.
-
-    Weighted by phrase length: "lạm phát" appearing is far stronger evidence
-    than "gdp" appearing, and counting both as one hit lets a short incidental
-    word outvote a specific one.
-    """
     lowered = " " + topic.lower().strip() + " "
     best, best_score = None, 0
     for key, words in vocabularies.items():
@@ -166,23 +121,8 @@ def _best_match(topic: str, vocabularies: dict[str, tuple[str, ...]]) -> str | N
 
 
 def match_keywords(topic: str) -> str | None:
-    """Best catalogue entry for a typed topic, without asking a model.
-
-    The customer's own words decide which entry runs; the model only gets a say
-    when they match nothing. A 3B model asked about "lạm phát Việt Nam" once
-    returned the key for GDP per capita, and matching a handful of entries
-    against typed words is a job a lookup does better.
-    """
     return _best_match(topic, {key: entry.keywords for key, entry in CATALOGUE.items()})
 
 
 def match_category(topic: str) -> str | None:
-    """Which kind of quantity a typed topic is about, or None if unrecognised.
-
-    Only consulted once `match_keywords` has come up empty, and its answer
-    decides which pool of vetted domains the run is allowed to open. None is a
-    real answer here rather than a failure to decide: it means the topic is
-    outside every field this project has vetted sources for, and the run says
-    so instead of widening its search until something turns up.
-    """
     return _best_match(topic, CATEGORY_KEYWORDS)
