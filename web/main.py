@@ -1,41 +1,4 @@
-"""
-The customer-facing web app.
-
-    python -m uvicorn web.main:app --reload      # http://127.0.0.1:8000
-
-What this file mostly does is decide what *not* to send. The pipeline produces
-scrape logs, coverage percentages, z-scores, chart-engine rule names, tier
-arithmetic and a note about which model wrote the paragraph. None of it reaches
-the browser. A customer needs to know which sources were used, how far the
-number moved, which points were odd, and what that means -- and every one of
-those is a sentence, not a metric.
-
-The progress the page shows is a phase and a trace, not a log. `pipeline.run`
-emits unindented lines for the stage it is entering and indented lines for
-detail; only the former become "Đang thu thập số liệu…". Alongside them it
-emits typed `TraceEvent`s -- this domain is being tried, it scored this much,
-it was kept or dropped -- and those do reach the browser, because the searching
-is the part a customer has no other way to see. Everything else the pipeline
-knows still stops here. The operator running the server sees the lot on
-stdout: different audiences, not different verbosity levels of one.
-
-Three mechanics worth naming. The scrape runs in a worker thread, because
-Playwright's sync API refuses to start inside a running asyncio loop and
-rewriting the collector to suit a web page would be the tail wagging the dog.
-The job's status is polled, because a job whose state is a string and whose
-phase is another string is something a reader can hold in their head. And the
-trace is *pushed*, over SSE, because polling it would put the events on a
-one-second grid and the whole claim being made is that the customer is
-watching the run rather than a replay of it.
-
-**Why the trace is also on the poll response.** SSE is one more thing that can
-fail -- a proxy that buffers, a tab restored from cache. The poll already runs,
-so it carries the events too and the page renders whichever arrives; a run
-whose stream never connected still shows its working, a second late.
-"""
-
 from __future__ import annotations
-
 import datetime as dt
 import json
 import queue
@@ -59,13 +22,10 @@ STATIC = Path(__file__).resolve().parent / "static"
 OUTPUTS = ROOT / "outputs"
 OUTPUTS.mkdir(exist_ok=True)
 
-# Long enough for the yearly indicators, which are the whole reason the range
-# is not capped at a year: inflation over two decades is a normal request.
 MAX_RANGE_DAYS = 40 * 366
 MAX_ANOMALIES_SHOWN = 5
 HISTORY_SHOWN = 40
 
-# What the form's checkboxes mean, in the vocabulary `src/scoring` uses.
 TIER_VALUES = {"government", "academic", "bank", "press", "aggregator"}
 COMPARISONS = {"auto", "month", "quarter", "year"}
 
@@ -91,47 +51,28 @@ class RunRequest(BaseModel):
             metric=self.metric.strip(),
             scope=self.scope.strip(),
             notes=self.notes.strip(),
-            # Anything the form did not send is dropped rather than trusted:
-            # these values decide which sources run.
             prefer=tuple(t for t in self.prefer if t in TIER_VALUES),
             exclude=tuple(t for t in self.exclude if t in TIER_VALUES),
             compare=self.compare if self.compare in COMPARISONS else "auto",
         )
 
 
-# How long a stream waits for the next event before sending a keep-alive.
-# Proxies and browsers hang up on a connection that goes quiet, and a scrape
-# can legitimately spend a minute inside one slow page load.
 STREAM_HEARTBEAT_S = 15
-# A stream that nobody is reading must not pin the job's events in memory
-# forever, and a slow reader must not slow the scrape down. Past this depth the
-# oldest events are dropped from *that listener's* queue only; the job's own
-# list stays complete, so a reconnect still gets the whole trace.
 STREAM_BACKLOG = 500
 
 
 @dataclass
 class Job:
     id: str
-    status: str = "running"        # running | done | refused | failed
+    status: str = "running"      
     phase: str = "Đang chuẩn bị…"
     error: str = ""
     payload: dict | None = None
-    # Kept for the operator; never sent to the browser.
     log: list[str] = field(default_factory=list)
-    # Sent to the browser, and the reason this file has a stream at all.
     events: list[dict] = field(default_factory=list)
-    # One queue per open stream. A job with no watchers simply has none.
     listeners: list[queue.Queue] = field(default_factory=list)
 
     def publish(self, event: dict) -> None:
-        """Record one trace event and hand it to whoever is watching.
-
-        The position is stamped on before it goes out. EventSource reconnects
-        on its own, and a reconnect replays the backlog, so without a number
-        on each event a dropped connection would show the customer the whole
-        run a second time.
-        """
         with _LOCK:
             event = {**event, "i": len(self.events)}
             self.events.append(event)
@@ -143,12 +84,6 @@ class Job:
                 pass
 
     def subscribe(self) -> tuple[list[dict], queue.Queue]:
-        """Everything so far, plus the queue for everything after it.
-
-        Both under one lock, which is what makes the handover gapless: an
-        event published between the snapshot and the subscription would
-        otherwise be in neither.
-        """
         with _LOCK:
             backlog = list(self.events)
             watcher: queue.Queue = queue.Queue(maxsize=STREAM_BACKLOG)
@@ -161,7 +96,6 @@ class Job:
                 self.listeners.remove(watcher)
 
     def close_streams(self) -> None:
-        """Tell every watcher the run is over, so their loops end."""
         with _LOCK:
             watchers = list(self.listeners)
         for watcher in watchers:
@@ -180,14 +114,6 @@ def _direction_word(change: float) -> str:
 
 
 def _sources(result: pipeline.ResearchResult) -> list[dict]:
-    """The source list, which the customer gets whether or not a chart follows.
-
-    A run that refuses is exactly when this matters most: "we could not verify
-    this" is an assertion, and the customer is owed the working -- which sites
-    were consulted and what each one scored. Sending only the refusal sentence
-    would ask them to take it on trust, which is the posture this whole
-    pipeline exists to avoid.
-    """
     return [
         {
             "label": s.label,
@@ -249,8 +175,6 @@ def _payload(result: pipeline.ResearchResult) -> dict:
         "anomaly_total": len(analysis.anomalies),
         "chart": {
             "url": f"/outputs/{result.charts[0].name}" if result.charts else "",
-            # Not lower-cased: the metric is a proper noun often enough
-            # ("USD/VND", "SJC", "Việt Nam") that folding its case reads as a typo.
             "caption": f"Diễn biến {metric} từ {analysis.first_date:%d/%m/%Y} "
                        f"đến {analysis.last_date:%d/%m/%Y}",
             "insight": result.insight.text if result.insight else "",
@@ -318,9 +242,6 @@ def poll_run(job_id: str, since: int = 0) -> dict:
         job = _JOBS.get(job_id)
     if job is None:
         raise HTTPException(404, "Phiên chạy không tồn tại.")
-    # Deliberately narrow: status, one friendly phase, the trace of what was
-    # tried, and the result or a reason. `since` lets a page that already has
-    # the first events ask only for what it is missing.
     with _LOCK:
         events = job.events[max(since, 0):]
     return {"status": job.status, "phase": job.phase, "message": job.error,
@@ -328,15 +249,7 @@ def poll_run(job_id: str, since: int = 0) -> dict:
 
 
 @app.get("/api/run/{job_id}/events")
-def stream_events(job_id: str) -> StreamingResponse:
-    """The trace, pushed as it happens.
-
-    Server-sent events rather than a WebSocket: nothing here travels from the
-    browser to the server, and a one-way stream that reconnects by itself is
-    the smaller thing to get right. The generator is synchronous, so FastAPI
-    runs it in a worker thread and a blocking `get` on the queue costs nothing
-    but that thread.
-    """
+def stream_events(job_id: str) -> StreamingResponse
     with _LOCK:
         job = _JOBS.get(job_id)
     if job is None:
@@ -344,30 +257,15 @@ def stream_events(job_id: str) -> StreamingResponse:
 
     return StreamingResponse(trace_frames(job), media_type="text/event-stream", headers={
         "Cache-Control": "no-cache",
-        # nginx buffers by default, which would collect the whole run and
-        # deliver it at the end -- the exact failure this endpoint exists to
-        # avoid, and an invisible one in development.
         "X-Accel-Buffering": "no",
     })
 
 
 def trace_frames(job: Job):
-    """The SSE body for one job: everything so far, then everything after.
-
-    A plain generator, deliberately, and not nested inside the route.
-    Streaming is the one property of this endpoint a test client cannot
-    observe -- it collects the whole response before handing it back, so a
-    stream that buffered until the run ended would look identical to one that
-    did not. Pulled directly, this generator can be asked the question that
-    matters: does it hand over the first frames while the job is still
-    running?
-    """
     backlog, watcher = job.subscribe()
     try:
         for event in backlog:
             yield _frame(event)
-        # A job that finished before anyone connected has nothing more to
-        # send, and its watcher would otherwise wait out the timeout.
         while job.status == "running":
             try:
                 event = watcher.get(timeout=STREAM_HEARTBEAT_S)
@@ -388,8 +286,6 @@ def _frame(event: dict) -> str:
 
 @app.get("/api/history")
 def run_history() -> dict:
-    """Past runs, for the second tab. Not a log: no traces, no scores broken
-    down, no phases -- just what was asked and whether it came back."""
     entries = history.load()[:HISTORY_SHOWN]
     return {
         "runs": [
@@ -410,25 +306,14 @@ def run_history() -> dict:
         ]
     }
 
-
-# --- the savings-rate dashboard ------------------------------------------
-
 @app.get("/api/dashboard")
 def dashboard(tenor: int = bank_rates.HEADLINE_TENOR, banks: str = "") -> dict:
-    """Everything the dashboard shows, from whatever has been captured.
-
-    Read-only and cheap: it never scrapes. Capturing is a separate action, so
-    opening the page a second time cannot hammer the source.
-    """
     stored = snapshots.load()
     comparison = bank_rates.compare(stored, tenor=tenor)
     if comparison is None:
         return {"ready": False,
                 "message": "Chưa có lần cập nhật nào. Bấm Cập nhật để lấy bảng lãi suất."}
 
-    # Default to the three highest-paying banks, which is the comparison
-    # someone opening the page is most likely to want. Three is also the
-    # number of series colours that stay distinguishable.
     chosen = [b for b in banks.split(",") if b.strip()] or              [row.bank for row in comparison.rows[:bank_rates.MAX_TREND_BANKS]]
     chosen = [b for b in chosen if any(r.bank == b for r in comparison.rows)]
     chosen = chosen[:bank_rates.MAX_TREND_BANKS]
@@ -474,22 +359,12 @@ def dashboard(tenor: int = bank_rates.HEADLINE_TENOR, banks: str = "") -> dict:
         },
     }
 
-
-# --- the structured rate query -------------------------------------------
-#
-# Synchronous, unlike `/api/run`: this reads a JSON file and draws at most six
-# charts, so there is no scrape to wait on and nothing to poll for. The charts
-# are named after their own contents, so asking the same question twice costs
-# one file check instead of a second render.
-
 class CompareRequest(BaseModel):
     banks: list[str] = PydanticField(min_length=1, max_length=12)
     tenors: list[int] = PydanticField(min_length=1, max_length=12)
     mode: str = "banks"
     preset: str = "month"
     board: str = "counter"
-    # Only read when preset is "custom"; the four together are one choice, and
-    # a partial one is rejected rather than half-applied.
     current_start: dt.date | None = None
     current_end: dt.date | None = None
     previous_start: dt.date | None = None
@@ -531,8 +406,6 @@ def rate_compare(request: CompareRequest) -> dict:
         return {"ok": False, "message": answer.message}
 
     def chart_url(path) -> str:
-        # The capture time is on the query string so a fresh capture busts the
-        # browser's cache even though the file name is content-addressed.
         return f"/outputs/{path.name}?t={answer.captured_at}"
 
     return {
@@ -573,7 +446,6 @@ def rate_compare(request: CompareRequest) -> dict:
 
 @app.post("/api/refresh")
 def refresh() -> dict:
-    """Fetch today's board. Runs in a thread; the page polls for the phase."""
     job = Job(id=uuid.uuid4().hex[:12])
     with _LOCK:
         _JOBS[job.id] = job
@@ -607,7 +479,6 @@ def refresh() -> dict:
 
 @app.get("/api/updates")
 def updates() -> dict:
-    """When the board was captured, and whether each capture matched BIDV."""
     return {
         "updates": [
             {
