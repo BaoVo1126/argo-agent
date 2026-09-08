@@ -1,11 +1,6 @@
-"""The chart engine's rules, which are the reason no model picks the chart."""
-
 from __future__ import annotations
-
 import datetime as dt
-
 import pytest
-
 from src.chart_engine import ChartType, choose, profile
 from src.chart_engine.rules import Kind
 
@@ -30,7 +25,6 @@ def test_date_plus_numeric_is_a_line():
 
 
 def test_two_series_of_similar_size_share_one_axis():
-    """A second axis is a claim that the scales are incomparable. 1.2x is not."""
     spec = choose(_series(a=lambda i: 100.0 + i, b=lambda i: 120.0 + i))
     assert spec.chart_type is ChartType.LINE
     assert spec.secondary_y is None
@@ -48,9 +42,6 @@ def test_category_plus_number_is_a_bar():
 
 
 def test_too_many_categories_falls_back_to_a_distribution_and_says_so():
-    """Forty bars is a picket fence. The engine drops to the distribution of
-    the same column, and the reason records that the comparison was declined --
-    silently answering a different question is the failure to avoid."""
     rows = [{"shop": f"s{i}", "price": float(i)} for i in range(40)]
     spec = choose(rows)
     assert spec.chart_type is ChartType.HISTOGRAM
