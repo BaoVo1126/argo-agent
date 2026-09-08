@@ -1,0 +1,261 @@
+"""
+Two or three sentences about what the numbers show -- and a guard that checks
+every number in them.
+
+The model never sees the data. It sees the finished arithmetic from
+`src/timeseries/analysis.py`: the change over the period, the period-on-period
+comparison, the days flagged as unusual. Its only job is to say that in
+readable Vietnamese for someone who is not going to read a table.
+
+**Then every number it wrote is checked against the numbers it was given, and
+every direction it claimed against the way the series actually moved.**
+This is not belt-and-braces. A model asked to describe a fall of 6.18% will,
+often enough to matter, write "gần 7%" or add a figure nobody supplied, and
+the sentence stays fluent while the number stops being true. Any number the
+model produces that is not in the allowed set means the whole paragraph is
+discarded and a template built from the same facts is used instead.
+
+The template is not a degraded mode. It is always correct, it needs no model
+and no quota, and the model is the optional layer on top -- which is the right
+way round when the output is a claim about real data shown to a customer.
+"""
+
+from __future__ import annotations
+
+import datetime as dt
+import re
+from dataclasses import dataclass
+
+from src.llm.text import LLMUnavailable, complete_json
+from src.timeseries.analysis import SeriesAnalysis
+
+SYSTEM = """Bạn viết nhận định ngắn về số liệu cho người đọc phổ thông.
+
+Quy tắc tuyệt đối:
+- CHỈ dùng những con số đã được cung cấp. Không tự tính thêm, không làm tròn
+  thành con số khác, không thêm bất kỳ số nào không có trong danh sách.
+- Không dùng thuật ngữ kỹ thuật (z-score, IQR, độ lệch chuẩn, outlier...).
+- Không nhắc đến mô hình, dữ liệu thô, hay cách hệ thống hoạt động.
+- Viết 2 đến 3 câu, giọng chuyên nghiệp, trung tính, dễ hiểu.
+
+Trả về đúng một đối tượng JSON: {"insight": "..."}"""
+
+
+@dataclass
+class Insight:
+    text: str
+    # "model" when a checked model answer was used, "template" otherwise.
+    origin: str
+    rejected_numbers: list[str]
+
+
+# --- number handling -----------------------------------------------------
+
+_NUMBER = re.compile(r"-?\d[\d.,]*")
+
+# Counts, small ordinals and years are not claims about the data; a sentence
+# saying "hai ngày" or "2026" must not be rejected for it.
+_ALWAYS_ALLOWED = set(range(0, 32)) | set(range(1900, 2200))
+
+
+def _parse(token: str) -> float | None:
+    """Read a number written in either the Vietnamese or the English style."""
+    text = token.strip().rstrip("%").strip()
+    if not text or not any(c.isdigit() for c in text):
+        return None
+    if "," in text and "." in text:
+        decimal = "," if text.rfind(",") > text.rfind(".") else "."
+        text = text.replace("." if decimal == "," else ",", "").replace(decimal, ".")
+    elif "," in text:
+        text = text.replace(",", ".") if re.search(r",\d{1,2}$", text) else text.replace(",", "")
+    elif "." in text and not re.search(r"\.\d{1,2}$", text):
+        text = text.replace(".", "")
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def _close(value: float, allowed: set[float]) -> bool:
+    """Is this one of the supplied numbers, allowing for sane rounding?"""
+    for known in allowed:
+        if known == value:
+            return True
+        scale = max(abs(known), abs(value), 1e-9)
+        # 0.6% covers rounding 6.183 to 6.18 or 6.2, and stops well short of
+        # letting 6.18 be reported as "gần 7".
+        if abs(known - value) / scale <= 0.006:
+            return True
+        for digits in (0, 1, 2):
+            if round(known, digits) == round(value, digits):
+                return True
+    return False
+
+
+def check_numbers(text: str, allowed: set[float]) -> list[str]:
+    """Numbers in `text` that were never supplied. Empty means the text is safe."""
+    bad = []
+    for match in _NUMBER.finditer(text):
+        value = _parse(match.group(0))
+        if value is None:
+            continue
+        if value in _ALWAYS_ALLOWED and float(value).is_integer():
+            continue
+        if not _close(value, allowed):
+            bad.append(match.group(0))
+    return bad
+
+
+# --- the second guard: a number can be right and its direction wrong -------
+
+# "tăng 3,41" / "giảm nhẹ 0,93" -- the verb, then at most a few words, then
+# the figure. Vietnamese puts the direction before the number, which is what
+# makes this checkable at all.
+_DIRECTED = re.compile(r"\b(tăng|giảm)\b([^.;:]{0,40}?)(-?\d[\d.,]*)", re.IGNORECASE)
+
+
+def directed_values(analysis: SeriesAnalysis) -> list[tuple[float, str]]:
+    """Every figure the text may quote, paired with the way it actually moved."""
+    pairs: list[tuple[float, str]] = [(abs(analysis.change), analysis.direction)]
+    for period in analysis.periods:
+        pairs.append((abs(period.change), "tăng" if period.change >= 0 else "giảm"))
+    for anomaly in analysis.anomalies:
+        pairs.append((abs(anomaly.change), anomaly.direction))
+    return pairs
+
+
+def check_directions(text: str, analysis: SeriesAnalysis) -> list[str]:
+    """Figures the text moved the wrong way. Empty means every claim agrees.
+
+    The number guard alone let this through: asked about a year when inflation
+    rose 322%, a model wrote "mức giảm 322.73%". Every figure in the sentence
+    was one it had been given, so the arithmetic check passed while the claim
+    was backwards -- and backwards is the version a reader acts on.
+    """
+    known = directed_values(analysis)
+    wrong: list[str] = []
+
+    for match in _DIRECTED.finditer(text):
+        stated = match.group(1).lower()
+        value = _parse(match.group(3))
+        if value is None:
+            continue
+
+        same = [d for v, d in known if _close(value, {v}) and d == stated]
+        opposite = [d for v, d in known if _close(value, {v}) and d != stated
+                    and d in ("tăng", "giảm")]
+        # Only a figure that is unambiguously the other way is a mistake. A
+        # number that matches nothing directional is left to the number guard,
+        # and one that matches both ways is genuinely ambiguous rather than
+        # wrong.
+        if opposite and not same:
+            wrong.append(f"{stated} {match.group(3)}")
+
+    return wrong
+
+
+# --- facts and template --------------------------------------------------
+
+def _money(value: float) -> str:
+    return f"{value:,.0f}".replace(",", ".") if abs(value) >= 1000 else f"{value:,.2f}"
+
+
+def allowed_values(analysis: SeriesAnalysis) -> set[float]:
+    values = {
+        analysis.first_value, analysis.last_value, analysis.change,
+        analysis.minimum, analysis.maximum, analysis.mean,
+        analysis.volatility, float(analysis.points), float(analysis.span_days),
+        float(len(analysis.anomalies)),
+    }
+    for period in analysis.periods:
+        values |= {period.change, period.current_mean, period.previous_mean}
+    for anomaly in analysis.anomalies:
+        values |= {anomaly.value, anomaly.change}
+    return {abs(v) for v in values} | values
+
+
+def facts_block(analysis: SeriesAnalysis, metric: str) -> str:
+    unit = f" {analysis.unit}" if analysis.unit else ""
+    lines = [
+        f"Đại lượng: {metric}",
+        f"Kỳ quan sát: {analysis.first_date:%d/%m/%Y} đến {analysis.last_date:%d/%m/%Y}"
+        f" ({analysis.points} mốc dữ liệu)",
+        f"Đầu kỳ: {_money(analysis.first_value)}{unit}",
+        f"Cuối kỳ: {_money(analysis.last_value)}{unit}",
+        f"Thay đổi cả kỳ: {analysis.change:+.2f} {analysis.unit_label}",
+        f"Thấp nhất: {_money(analysis.minimum)}{unit}; cao nhất: {_money(analysis.maximum)}{unit}",
+    ]
+    for period in analysis.periods:
+        lines.append(f"{period.label}: {period.change:+.2f} {period.unit_label}")
+    if analysis.anomalies:
+        lines.append(f"Số mốc biến động khác thường: {len(analysis.anomalies)} "
+                     f"(mỗi mốc là một {analysis.cadence})")
+        for anomaly in analysis.anomalies[:3]:
+            lines.append(f"  - {anomaly.date:%d/%m/%Y}: {anomaly.direction} "
+                         f"{abs(anomaly.change):.2f} {anomaly.unit_label} "
+                         f"so với {analysis.cadence} liền trước")
+    else:
+        lines.append(f"Không có {analysis.cadence} nào biến động khác thường.")
+    return "\n".join(lines)
+
+
+def template(analysis: SeriesAnalysis, metric: str) -> str:
+    """The always-correct version, assembled from the same facts."""
+    unit = f" {analysis.unit}" if analysis.unit else ""
+    sentences = [
+        f"Từ {analysis.first_date:%d/%m/%Y} đến {analysis.last_date:%d/%m/%Y}, "
+        f"{metric} {analysis.direction} {abs(analysis.change):.2f} "
+        f"{analysis.unit_label}, từ {_money(analysis.first_value)}{unit} "
+        f"còn {_money(analysis.last_value)}{unit}."
+        if analysis.change < 0 else
+        f"Từ {analysis.first_date:%d/%m/%Y} đến {analysis.last_date:%d/%m/%Y}, "
+        f"{metric} {analysis.direction} {abs(analysis.change):.2f} "
+        f"{analysis.unit_label}, từ {_money(analysis.first_value)}{unit} "
+        f"lên {_money(analysis.last_value)}{unit}."
+    ]
+    if analysis.periods:
+        period = analysis.periods[0]
+        way = "cao hơn" if period.change >= 0 else "thấp hơn"
+        sentences.append(f"{period.label} {way} {abs(period.change):.2f} "
+                         f"{period.unit_label}.")
+    if analysis.anomalies:
+        first = analysis.anomalies[0]
+        sentences.append(
+            f"Có {len(analysis.anomalies)} mốc biến động khác thường so với mặt bằng "
+            f"của kỳ, mạnh nhất là {first.date:%d/%m/%Y} khi giá trị {first.direction} "
+            f"{abs(first.change):.2f} {first.unit_label} chỉ trong một {analysis.cadence}."
+        )
+    else:
+        sentences.append("Không mốc nào biến động vượt hẳn khỏi mặt bằng chung của kỳ.")
+    return " ".join(sentences)
+
+
+def write(analysis: SeriesAnalysis, metric: str, model: str | None = None) -> Insight:
+    """Two or three sentences, model-written when they survive the check."""
+    fallback = template(analysis, metric)
+    allowed = allowed_values(analysis)
+
+    prompt = (
+        "Dưới đây là các số liệu đã được tính sẵn. Hãy viết nhận định 2-3 câu.\n\n"
+        + facts_block(analysis, metric)
+    )
+
+    try:
+        raw = complete_json(SYSTEM, prompt, model=model, temperature=0.2)
+    except Exception:
+        return Insight(fallback, "template", [])
+
+    text = " ".join(str(raw.get("insight") or "").split())
+    if not text or len(text) < 30:
+        return Insight(fallback, "template", [])
+
+    invented = check_numbers(text, allowed)
+    backwards = check_directions(text, analysis)
+    if invented or backwards:
+        # The paragraph is discarded whole. A sentence with one wrong figure in
+        # it is not repairable by deleting the figure -- the claim around it was
+        # built on that number, and the same goes for a figure sent the wrong
+        # way.
+        return Insight(fallback, "template", invented + backwards)
+
+    return Insight(text, "model", [])
