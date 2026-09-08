@@ -50,7 +50,7 @@ cd argo
 ### 2. Create a virtual environment
 
 ```bash
-python -m venv .venv.example
+python -m venv .venv
 ```
 
 Activate it:
