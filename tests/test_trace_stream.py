@@ -1,32 +1,14 @@
-"""
-The trace reaches the browser while the run is still going.
-
-This is the one claim in the feature that a unit test of the pipeline cannot
-make. `probe_pool` emitting events proves the events exist; it does not prove
-a customer sees them before the result does, and a stream that quietly
-buffered until the job finished would pass every other test in this suite
-while delivering exactly the static report the trace was built to replace.
-
-So the run here is a stub that pauses in the middle, and the assertion is
-about *when* the bytes arrive: the first events must be readable off the
-stream while the job's status is still "running".
-"""
-
 from __future__ import annotations
-
 import json
 import threading
-
 import pytest
 from fastapi.testclient import TestClient
-
 from modes.research import pipeline
 from web import main as web
 
 
 @pytest.fixture
 def client(monkeypatch):
-    """A server whose scrape is a stub we can hold open."""
     released = threading.Event()
     reached_middle = threading.Event()
 
@@ -62,10 +44,6 @@ def _start(client) -> str:
 
 
 def test_frames_are_produced_while_the_run_is_still_going(client):
-    """The claim the whole feature rests on, tested at the only place it can
-    be. `TestClient` collects a streaming response in full before returning
-    it, so driving the endpoint through HTTP would prove nothing about when
-    the bytes left -- the generator is pulled directly instead."""
     job_id = _start(client)
     assert client.reached_middle.wait(timeout=10)
 
@@ -77,8 +55,6 @@ def test_frames_are_produced_while_the_run_is_still_going(client):
     assert [event["kind"] for event in events] == ["probe", "keep"]
     assert events[1]["score"] == 60
 
-    # And it keeps going: the event published after this point arrives on the
-    # same open generator rather than waiting for the result.
     job.publish({"kind": "hit", "text": "imf.org trả về 20 mốc dữ liệu"})
     assert json.loads(next(frames)[len("data: "):])["kind"] == "hit"
     frames.close()
@@ -97,8 +73,6 @@ def test_the_stream_endpoint_answers_as_an_event_stream(client):
         payloads = [json.loads(line[len("data: "):])
                     for line in stream.iter_lines() if line.startswith("data: ")]
 
-    # The last frame is the end marker, which carries no event of its own: it
-    # is what tells the browser to stop reconnecting to a finished run.
     assert payloads[-1] == {}
     assert [p["kind"] for p in payloads[:2]] == ["probe", "keep"]
 
