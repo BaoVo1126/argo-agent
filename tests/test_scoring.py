@@ -1,9 +1,5 @@
-"""Credibility: provenance, corroboration, and what the threshold refuses."""
-
 from __future__ import annotations
-
 import datetime as dt
-
 from src.scoring import HealthRecord, SourceEvidence, Tier, classify, score
 from src.scoring.credibility import DEFAULT_THRESHOLD
 
@@ -21,12 +17,6 @@ def evidence(name: str, url: str, rows: list[dict], **kw) -> SourceEvidence:
 
 
 def health_for(*urls: str) -> HealthRecord:
-    """A record in which the given domains have already proved themselves.
-
-    Most of these tests are about the arithmetic of scoring rather than about
-    verification, so they start from "these have worked before" -- the state any
-    machine reaches after one successful run.
-    """
     record = HealthRecord()
     for url in urls:
         record.record_success(url, classify(url).tier, rows=40)
@@ -34,7 +24,6 @@ def health_for(*urls: str) -> HealthRecord:
 
 
 def test_government_and_bank_are_read_off_the_url_not_the_name():
-    """A source cannot claim a tier; the tier comes from the address fetched."""
     assert classify("https://sbv.gov.vn/x").tier is Tier.GOVERNMENT
     assert classify("https://www.vietcombank.com.vn/api").tier is Tier.BANK
     assert classify("https://data.worldbank.org/i").tier is Tier.ACADEMIC
@@ -58,8 +47,6 @@ def test_an_official_source_passes_alone_once_verified():
 
 
 def test_a_bank_needs_corroboration_to_pass():
-    """40 + 10 for structure is 50: one point short on its own, over the line
-    once something independent reports the same numbers."""
     bank, feed = "https://www.vietcombank.com.vn/a", "https://cdn.example.org/x"
     record = health_for(bank, feed, "https://sbv.gov.vn/x")
 
@@ -75,7 +62,6 @@ def test_a_bank_needs_corroboration_to_pass():
 
 
 def test_an_aggregator_stays_out_even_when_it_is_right():
-    """Agreeing with a bank is not the same as being accountable for a number."""
     scores = score([
         evidence("vcb", "https://www.vietcombank.com.vn/a", series(26000)),
         evidence("agg", "https://webgia.com/x", series(26100), label="agg"),
@@ -87,8 +73,6 @@ def test_an_aggregator_stays_out_even_when_it_is_right():
 
 
 def test_a_different_quantity_is_not_corroboration():
-    """A central rate and a commercial rate are both real and 5% apart, which
-    is not two readings of one thing."""
     scores = score([
         evidence("vcb", "https://www.vietcombank.com.vn/a", series(26000)),
         evidence("other", "https://cdn.example.org/x", series(24700), label="other"),
@@ -98,12 +82,11 @@ def test_a_different_quantity_is_not_corroboration():
 
 
 def test_a_crowd_of_copies_cannot_outvote_provenance():
-    """Corroboration is capped, so five aggregators cannot manufacture a pass."""
     urls = [f"https://copy{i}.example.com/x" for i in range(5)]
     copies = [evidence(f"c{i}", url, series(26000), label=f"c{i}")
               for i, url in enumerate(urls)]
     scores = score(copies, health=health_for("https://sbv.gov.vn/x", *urls))
-    assert all(s.total == 15 + 30 + 10 for s in scores)   # cap applied
+    assert all(s.total == 15 + 30 + 10 for s in scores)   
     assert not any(s.accepted for s in scores)
 
 
@@ -115,7 +98,6 @@ def test_numbers_read_out_of_prose_lose_the_structure_points():
 
 
 def test_too_little_overlap_is_not_agreement():
-    """Two series that meet on three days agree about nothing."""
     scores = score([
         evidence("a", "https://www.vietcombank.com.vn/a", series(26000, days=40)),
         evidence("b", "https://cdn.example.org/b", series(26000, days=3), label="b"),
@@ -124,11 +106,7 @@ def test_too_little_overlap_is_not_agreement():
     assert all(s.agrees_with == [] for s in scores)
 
 
-# --- verification: a tier has to be earned before it pays -----------------
-
 def test_a_domain_never_scraped_scores_nothing_for_provenance():
-    """The tier table used to pay 50 points to a central bank nobody had ever
-    fetched a byte from. An impressive suffix is not evidence."""
     scores = score([evidence("sbv", "https://sbv.gov.vn/x", series(24800))],
                    health=HealthRecord())
     assert scores[0].verified is False
@@ -145,17 +123,14 @@ def test_one_successful_scrape_is_what_turns_the_tier_on():
 
 
 def test_the_threshold_is_suspended_until_an_official_source_is_verified():
-    """60 is the point where one authoritative publisher passes alone. With
-    none verified, enforcing it would reject everything for a reason about this
-    project's own coverage rather than about the data."""
     bank = "https://www.vietcombank.com.vn/a"
     only_a_bank = health_for(bank)
     assert only_a_bank.threshold_active() is False
 
     scores = score([evidence("vcb", bank, series(26000))], health=only_a_bank)
     assert scores[0].threshold_enforced is False
-    assert scores[0].accepted is True     # it returned rows, and that is the bar
-    assert scores[0].total == 50          # the score is still reported honestly
+    assert scores[0].accepted is True  
+    assert scores[0].total == 50          
 
 
 def test_verifying_an_official_source_switches_the_threshold_back_on():
@@ -173,8 +148,6 @@ def test_a_source_that_returned_nothing_does_not_get_verified():
 
 
 def test_verification_survives_a_later_outage(tmp_path):
-    """A bank being down for an afternoon is not evidence it was never a bank,
-    so the record answers "has this ever been real?", not "is it up now?"."""
     path = tmp_path / "health.json"
     record = HealthRecord(path=path)
     record.record_success("https://api.worldbank.org/v2/x", Tier.ACADEMIC, rows=60)
